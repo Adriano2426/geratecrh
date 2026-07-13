@@ -129,8 +129,19 @@
   @media (max-width:900px){.kanban{grid-template-columns:1fr;} .chips-grid{grid-template-columns:repeat(2,1fr);}}
   .mobile-col-switch{display:none;}
   @media (max-width:640px){
-    header{padding:14px 16px;gap:10px;}
+    header{padding:14px 16px;gap:10px;flex-wrap:wrap;}
     .brand-sub{display:none;}
+    header .brand{margin-right:0;flex:none;}
+    .pct-box{padding:6px 9px;gap:5px;font-size:0;}
+    .pct-box .val{font-size:12px;}
+    .pct-box .lbl{display:none;}
+    .conn-btn{padding:6px 9px;}
+    .conn-btn span:not(.dot){font-size:0;}
+    .conn-btn .dot{width:8px;height:8px;}
+    .who-box{padding:4px 6px;gap:6px;}
+    .who-box .role-badge{display:none;}
+    .who-box .name{font-size:11px;}
+    .btn-primary{padding:9px 12px;font-size:12px;gap:5px;flex:none;margin-left:auto;}
     .toolbar{padding:14px 16px 6px;}
     main{padding:12px 16px 30px;}
     .info-section, #info-landing{padding-left:16px;padding-right:16px;}
