@@ -654,7 +654,7 @@
       </div>
       <div class="field hidden" id="info-new-access-field">
         <label>Pessoas</label>
-        <div class="access-list" id="info-new-access-list"></div>
+        <div class="chips-grid" id="info-new-access-list" style="grid-template-columns:1fr;max-height:220px;overflow:auto;padding-right:2px;"></div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-cancel" id="info-new-cancel">Cancelar</button>
@@ -697,7 +697,7 @@
       </div>
       <div class="field hidden" id="vault-new-access-field">
         <label>Pessoas com acesso</label>
-        <div class="access-list" id="vault-new-access-list"></div>
+        <div class="chips-grid" id="vault-new-access-list" style="grid-template-columns:1fr;max-height:220px;overflow:auto;padding-right:2px;"></div>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-cancel" id="vault-new-cancel">Cancelar</button>
@@ -724,7 +724,7 @@
       </div>
       <div class="field hidden" id="vault-edit-access-field">
         <label>Pessoas com acesso</label>
-        <div class="access-list" id="vault-edit-access-list"></div>
+        <div class="chips-grid" id="vault-edit-access-list" style="grid-template-columns:1fr;max-height:220px;overflow:auto;padding-right:2px;"></div>
       </div>
     </div>
 
@@ -2164,7 +2164,7 @@
   document.getElementById('info-new-acesso').addEventListener('change', function(){
     var restrito = this.value==='restrito';
     document.getElementById('info-new-access-field').classList.toggle('hidden', !restrito);
-    if(restrito) buildAccessChecklist(document.getElementById('info-new-access-list'), []);
+    if(restrito) buildPersonPillPicker(document.getElementById('info-new-access-list'), [], true);
   });
   document.getElementById('btn-new-infobox').addEventListener('click', function(){
     document.getElementById('info-new-titulo').value='';
@@ -2180,7 +2180,7 @@
     var titulo = document.getElementById('info-new-titulo').value.trim();
     if(!titulo) return;
     var acesso = document.getElementById('info-new-acesso').value;
-    var selected = acesso==='restrito' ? readAccessChecklist(document.getElementById('info-new-access-list')) : [];
+    var selected = acesso==='restrito' ? readPersonPillPicker(document.getElementById('info-new-access-list')) : [];
     var criadoPor = state.session.username;
     if(state.conn==='online'){
       try{
@@ -2399,7 +2399,7 @@
   document.getElementById('vault-new-acesso').addEventListener('change', function(){
     var restrito = this.value==='restrito';
     document.getElementById('vault-new-access-field').classList.toggle('hidden', !restrito);
-    if(restrito) buildAccessChecklist(document.getElementById('vault-new-access-list'), []);
+    if(restrito) buildPersonPillPicker(document.getElementById('vault-new-access-list'), [], true);
   });
   document.getElementById('btn-new-vaultbox').addEventListener('click', function(){
     document.getElementById('vault-new-titulo').value='';
@@ -2419,7 +2419,7 @@
     var cor = readColorPicker(document.getElementById('vault-new-color-picker'));
     var obs = document.getElementById('vault-new-obs').value;
     var acesso = document.getElementById('vault-new-acesso').value;
-    var selected = acesso==='restrito' ? readAccessChecklist(document.getElementById('vault-new-access-list')) : [];
+    var selected = acesso==='restrito' ? readPersonPillPicker(document.getElementById('vault-new-access-list')) : [];
     var criadoPor = state.session.username;
 
     if(state.conn==='online'){
@@ -2465,14 +2465,14 @@
       document.getElementById('vault-edit-acesso').value = box.acesso;
       var restrito = box.acesso==='restrito';
       document.getElementById('vault-edit-access-field').classList.toggle('hidden', !restrito);
-      buildAccessChecklist(document.getElementById('vault-edit-access-list'), vaultAccessUsernames(boxId));
+      buildPersonPillPicker(document.getElementById('vault-edit-access-list'), vaultAccessUsernames(boxId), true);
     }
     document.getElementById('vault-detail-overlay').classList.remove('hidden');
   }
   document.getElementById('vault-edit-acesso').addEventListener('change', function(){
     var restrito = this.value==='restrito';
     document.getElementById('vault-edit-access-field').classList.toggle('hidden', !restrito);
-    if(restrito) buildAccessChecklist(document.getElementById('vault-edit-access-list'), vaultAccessUsernames(state.openVaultBoxId));
+    if(restrito) buildPersonPillPicker(document.getElementById('vault-edit-access-list'), vaultAccessUsernames(state.openVaultBoxId), true);
   });
   document.getElementById('vault-detail-close').addEventListener('click', function(){
     document.getElementById('vault-detail-overlay').classList.add('hidden');
@@ -2501,7 +2501,7 @@
     if(!box) return;
     var cor = readColorPicker(document.getElementById('vault-edit-color-picker'));
     var acesso = document.getElementById('vault-edit-acesso').value;
-    var selected = acesso==='restrito' ? readAccessChecklist(document.getElementById('vault-edit-access-list')) : [];
+    var selected = acesso==='restrito' ? readPersonPillPicker(document.getElementById('vault-edit-access-list')) : [];
 
     if(state.conn==='online'){
       try{
