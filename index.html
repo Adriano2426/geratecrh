@@ -737,6 +737,8 @@
 </div>
 
 <!-- ============ TAREFAS DO DIA (calendário) ============ -->
+<div class="floating-panel hidden" id="generic-popover" style="position:fixed;max-height:260px;overflow:auto;"></div>
+
 <div class="overlay hidden" id="day-overlay">
   <div class="modal">
     <h2 id="day-modal-title">Tarefas do dia</h2>
@@ -1460,6 +1462,20 @@
     if(other) other.classList.add('hidden');
     panel.classList.toggle('hidden');
   }
+  function showPopoverNear(triggerEl, titleText, itemsHtml){
+    var pop = document.getElementById('generic-popover');
+    pop.innerHTML = '<div class="fp-title">'+escapeHtml(titleText)+'</div>'+itemsHtml;
+    pop.classList.remove('hidden');
+    var r = triggerEl.getBoundingClientRect();
+    var popWidth = 230;
+    var left = Math.min(r.left, window.innerWidth - popWidth - 12);
+    left = Math.max(8, left);
+    var top = r.bottom + 6;
+    if(top + 200 > window.innerHeight) top = Math.max(8, r.top - 206);
+    pop.style.left = left+'px';
+    pop.style.top = top+'px';
+  }
+  function hideGenericPopover(){ document.getElementById('generic-popover').classList.add('hidden'); }
   document.getElementById('tools-trigger').addEventListener('click', function(e){
     e.stopPropagation();
     toggleFloatingPanel('tools-panel', 'person-filter-panel');
@@ -1481,6 +1497,8 @@
     var navPanel = document.getElementById('nav-switch-panel');
     var navWrap = document.querySelector('.nav-switch-wrap');
     if(navPanel && !navPanel.classList.contains('hidden') && navWrap && !navWrap.contains(e.target)) navPanel.classList.add('hidden');
+    var genPop = document.getElementById('generic-popover');
+    if(genPop && !genPop.classList.contains('hidden') && !genPop.contains(e.target) && !e.target.closest('[data-who-reacted],[data-who-viewed]')) genPop.classList.add('hidden');
   });
   document.getElementById('type-tabs').addEventListener('click', function(e){
     var btn = e.target.closest('button'); if(!btn) return;
@@ -1976,19 +1994,27 @@
       btn.addEventListener('click', function(){ toggleMuralPin(Number(btn.getAttribute('data-pin'))); });
     });
     wrap.querySelectorAll('[data-who-reacted]').forEach(function(el){
-      el.addEventListener('click', function(){
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
         var postId = Number(el.getAttribute('data-who-reacted'));
-        var names = state.muralReactions.filter(function(r){return r.postId===postId;}).map(function(r){return userName(r.username);});
-        alert('Curtiram:\n'+names.join('\n'));
+        var rows = state.muralReactions.filter(function(r){return r.postId===postId;});
+        var itemsHtml = rows.map(function(r){
+          var p = pal(r.username);
+          return '<div class="fp-item" style="cursor:default;"><span class="av" style="width:20px;height:20px;border-radius:5px;background:'+p.avatar+';display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:10px;">👍</span>'+escapeHtml(userName(r.username))+'</div>';
+        }).join('');
+        showPopoverNear(el, 'CURTIRAM', itemsHtml || '<div class="fp-item" style="cursor:default;color:var(--muted);">Ninguém ainda</div>');
       });
     });
     wrap.querySelectorAll('[data-who-viewed]').forEach(function(el){
-      el.addEventListener('click', function(){
+      el.addEventListener('click', function(e){
+        e.stopPropagation();
         var postId = Number(el.getAttribute('data-who-viewed'));
         var rows = state.muralViews.filter(function(v){return v.postId===postId;});
-        if(rows.length===0){ alert('Ninguém visualizou esse aviso ainda.'); return; }
-        var lines = rows.map(function(v){ return userName(v.username)+' — '+fmtWhen(v.vistoEm); });
-        alert('Visualizaram:\n'+lines.join('\n'));
+        var itemsHtml = rows.map(function(v){
+          var p = pal(v.username);
+          return '<div class="fp-item" style="cursor:default;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span class="av" style="width:20px;height:20px;border-radius:5px;background:'+p.avatar+';display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:10px;">👁</span>'+escapeHtml(userName(v.username))+'</span><span style="font-size:10.5px;color:var(--muted);">'+fmtWhen(v.vistoEm)+'</span></div>';
+        }).join('');
+        showPopoverNear(el, 'VISUALIZARAM', itemsHtml || '<div class="fp-item" style="cursor:default;color:var(--muted);">Ninguém ainda</div>');
       });
     });
 
