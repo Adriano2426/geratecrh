@@ -483,14 +483,20 @@
           <button class="team-btn" id="btn-info-back-mural">← Voltar</button>
           <div>
             <div style="font-size:16px;font-weight:800;">Mural de avisos</div>
-            <div style="font-size:12.5px;color:var(--muted);font-weight:500;">Visível para todo o time</div>
+            <div style="font-size:12.5px;color:var(--muted);font-weight:500;">Avisos de hoje e fixados</div>
           </div>
+          <span id="mural-show-all-toggle" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brand-green);cursor:pointer;text-decoration:underline;">Ver avisos anteriores</span>
         </div>
       </div>
       <main>
-        <div class="thread-input-row" style="margin:0 32px 18px;">
+        <div class="thread-input-row" style="margin:0 32px 8px;">
           <textarea id="mural-post-input" placeholder="Escrever um aviso..."></textarea>
           <button type="button" class="btn btn-save" id="mural-post-send" style="align-self:flex-end">Publicar</button>
+        </div>
+        <div class="row" style="margin:0 32px 18px;gap:10px;">
+          <button type="button" class="team-btn" id="mural-attach-btn">📎 Anexar PDF ou imagem</button>
+          <input type="file" id="mural-file-input" accept=".pdf,.png,.jpg,.jpeg" style="display:none;">
+          <span id="mural-file-chip" class="hidden" style="display:flex;align-items:center;gap:6px;background:var(--chip-bg);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:700;color:var(--ink);"></span>
         </div>
         <div id="mural-list" style="padding:0 32px 40px;"></div>
       </main>
@@ -794,6 +800,8 @@
   var LS_READ_MARKS = 'trh_read_marks_v1';
   var LS_MURAL_PINS = 'trh_mural_pins_v1';
   var LS_MURAL_REACTIONS = 'trh_mural_reactions_v1';
+  var LS_MURAL_VIEWS = 'trh_mural_views_v1';
+  var LS_MURAL_SHOW_ALL = 'trh_mural_show_all_v1';
   var LS_THEME = 'trh_theme_v1';
 
   // ---------- theme (light/dark) ----------
@@ -1009,6 +1017,8 @@
     mobileCol: 'todo',
     readMarks: {},       // { 'mural': iso, 'box:12': iso } — pessoal, só local
     muralReactions: [],  // [{postId, username}]
+    muralViews: [],      // [{postId, username, vistoEm}]
+    muralShowAll: false,
   };
   var sb = null;
   var channels = [];
@@ -1033,7 +1043,8 @@
   function mapInfoMsgRow(r){ return {id:r.id, caixaId:r.caixa_id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em}; }
   function mapVaultBoxRow(r){ return {id:r.id, titulo:r.titulo, cor:r.cor||'#111111', observacoes:r.observacoes||'', criadoPor:r.criado_por, acesso:r.acesso||'geral', criadoEm:r.criado_em}; }
   function mapVaultAccessRow(r){ return {caixaId:r.caixa_id, username:r.username}; }
-  function mapMuralPostRow(r){ return {id:r.id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em, fixado: !!r.fixado}; }
+  function mapMuralPostRow(r){ return {id:r.id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em, fixado: !!r.fixado, anexoUrl:r.anexo_url||'', anexoNome:r.anexo_nome||'', anexoTipo:r.anexo_tipo||''}; }
+  function mapMuralViewRow(r){ return {postId:r.post_id, username:r.username, vistoEm:r.visto_em}; }
   function mapMuralReactionRow(r){ return {postId:r.post_id, username:r.username}; }
   function mapInfoAccessRow(r){ return {caixaId:r.caixa_id, username:r.username}; }
 
@@ -1082,6 +1093,12 @@
     return sb.from('mural_reacoes').select('*').then(function(res){
       if(res.error) throw res.error;
       state.muralReactions = (res.data||[]).map(mapMuralReactionRow);
+    });
+  }
+  function reloadMuralViewsFromSb(){
+    return sb.from('mural_visualizacoes').select('*').then(function(res){
+      if(res.error) throw res.error;
+      state.muralViews = (res.data||[]).map(mapMuralViewRow);
     });
   }
   function reloadInfoBoxesFromSb(){
@@ -1145,7 +1162,10 @@
     var ch11 = sb.channel('trh_mural_reacoes').on('postgres_changes',{event:'*',schema:'public',table:'mural_reacoes'}, function(){
       reloadMuralReactionsFromSb().then(refreshUi);
     }).subscribe();
-    channels = [ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11];
+    var ch12 = sb.channel('trh_mural_visualizacoes').on('postgres_changes',{event:'*',schema:'public',table:'mural_visualizacoes'}, function(){
+      reloadMuralViewsFromSb().then(refreshUi);
+    }).subscribe();
+    channels = [ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12];
   }
 
   function refreshUi(){
@@ -1172,6 +1192,7 @@
       await reloadInfoAccessFromSb();
       await reloadTaskCommentsFromSb();
       await reloadMuralReactionsFromSb();
+      await reloadMuralViewsFromSb();
       subscribeRealtime();
       state.conn = 'online';
       updateConnIndicators();
@@ -1199,6 +1220,7 @@
     state.infoBoxAccess = loadLocalList(LS_INFO_ACCESS);
     state.taskComments = loadLocalList(LS_TASK_COMMENTS);
     state.muralReactions = loadLocalList(LS_MURAL_REACTIONS);
+    state.muralViews = loadLocalList(LS_MURAL_VIEWS);
     updateConnIndicators();
     refreshUi();
   }
@@ -1869,39 +1891,127 @@
   }
   function muralReactionCount(postId){ return state.muralReactions.filter(function(r){ return r.postId===postId; }).length; }
   function iReacted(postId){ return state.muralReactions.some(function(r){ return r.postId===postId && r.username===state.session.username; }); }
+  function muralViewCount(postId){ return state.muralViews.filter(function(v){ return v.postId===postId; }).length; }
+  function isSameDay(iso, ref){
+    if(!iso) return false;
+    var d = new Date(iso);
+    return d.getFullYear()===ref.getFullYear() && d.getMonth()===ref.getMonth() && d.getDate()===ref.getDate();
+  }
+  function attachIcon(tipo){
+    if(tipo==='pdf') return {label:'PDF', bg:'#e0473a'};
+    return {label:'IMG', bg:'#2f8fe0'};
+  }
+
+  var muralPendingFile = null;
+  document.getElementById('mural-attach-btn').addEventListener('click', function(){
+    document.getElementById('mural-file-input').click();
+  });
+  document.getElementById('mural-file-input').addEventListener('change', function(){
+    var file = this.files && this.files[0];
+    if(!file) return;
+    var okTypes = ['application/pdf','image/png','image/jpeg'];
+    if(okTypes.indexOf(file.type)===-1){ alert('Só é possível anexar PDF, PNG ou JPG.'); this.value=''; return; }
+    if(file.size > 8*1024*1024){ alert('Arquivo muito grande (máximo 8MB).'); this.value=''; return; }
+    muralPendingFile = file;
+    var chip = document.getElementById('mural-file-chip');
+    chip.textContent = '📎 '+file.name+'  ✕';
+    chip.classList.remove('hidden');
+  });
+  document.getElementById('mural-file-chip').addEventListener('click', function(){
+    muralPendingFile = null;
+    document.getElementById('mural-file-input').value = '';
+    this.classList.add('hidden');
+  });
+  document.getElementById('mural-show-all-toggle').addEventListener('click', function(){
+    state.muralShowAll = !state.muralShowAll;
+    renderMural();
+  });
 
   function renderMural(){
     var wrap = document.getElementById('mural-list');
     var latest = state.muralPosts.reduce(function(mx,p){ return (p.criadoEm||'')>mx ? p.criadoEm : mx; }, '');
     markRead('mural');
+    var hoje = new Date();
+    var toggle = document.getElementById('mural-show-all-toggle');
+    toggle.textContent = state.muralShowAll ? 'Ver só hoje e fixados' : 'Ver avisos anteriores';
+
     var posts = state.muralPosts.slice().sort(function(a,b){
       if(!!a.fixado !== !!b.fixado) return a.fixado ? -1 : 1;
       return (b.criadoEm||'').localeCompare(a.criadoEm||'');
     });
-    if(posts.length===0){
-      wrap.innerHTML = '<div class="empty-note">Nenhum aviso publicado ainda.</div>';
-      return;
+    if(!state.muralShowAll){
+      posts = posts.filter(function(p){ return p.fixado || isSameDay(p.criadoEm, hoje); });
     }
-    wrap.innerHTML = posts.map(function(p){
-      var count = muralReactionCount(p.id);
-      var reacted = iReacted(p.id);
-      return '<div class="mural-post'+(p.fixado?' pinned':'')+'">'+
-        (p.fixado ? '<div style="font-size:10px;font-weight:800;color:var(--brand-green);margin-bottom:3px;">📌 FIXADO</div>' : '')+
-        '<div><span class="who">'+escapeHtml(userName(p.autor))+'</span><span class="when">'+fmtWhen(p.criadoEm)+'</span></div>'+
-        '<div class="txt">'+escapeHtml(p.texto)+'</div>'+
-        '<div style="display:flex;align-items:center;gap:10px;margin-top:8px;">'+
-          '<button data-react="'+p.id+'" style="border:1.5px solid var(--border);background:'+(reacted?'var(--chip-bg)':'var(--card)')+';border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);">👍 '+(count>0?count:'')+'</button>'+
-          (isAdmin() ? '<button data-pin="'+p.id+'" style="border:0;background:transparent;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">'+(p.fixado?'Desafixar':'Fixar')+'</button>' : '')+
-        '</div>'+
-      '</div>';
-    }).join('');
+
+    if(posts.length===0){
+      wrap.innerHTML = '<div class="empty-note">'+(state.muralShowAll ? 'Nenhum aviso publicado ainda.' : 'Nenhum aviso hoje ou fixado. Clique em "Ver avisos anteriores" pra ver o histórico.')+'</div>';
+    } else {
+      wrap.innerHTML = posts.map(function(p){
+        var count = muralReactionCount(p.id);
+        var reacted = iReacted(p.id);
+        var viewCount = muralViewCount(p.id);
+        var attach = p.anexoUrl ? attachIcon(p.anexoTipo) : null;
+        return '<div class="mural-post'+(p.fixado?' pinned':'')+'">'+
+          (p.fixado ? '<div style="font-size:10px;font-weight:800;color:var(--brand-green);margin-bottom:3px;">📌 FIXADO</div>' : '')+
+          '<div><span class="who">'+escapeHtml(userName(p.autor))+'</span><span class="when">'+fmtWhen(p.criadoEm)+'</span></div>'+
+          '<div class="txt">'+escapeHtml(p.texto)+'</div>'+
+          (attach ? '<div style="display:flex;align-items:center;gap:10px;background:var(--chip-bg);border-radius:10px;padding:9px 11px;margin:8px 0;">'+
+            '<span style="width:30px;height:30px;border-radius:8px;background:'+attach.bg+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex:none;">'+attach.label+'</span>'+
+            '<span style="font-size:12px;font-weight:700;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escapeHtml(p.anexoNome||'arquivo')+'</span>'+
+            '<a href="'+p.anexoUrl+'" target="_blank" rel="noopener" style="font-size:11px;font-weight:800;color:var(--brand-green);white-space:nowrap;">Abrir ↗</a>'+
+          '</div>' : '')+
+          '<div style="display:flex;align-items:center;gap:10px;margin-top:8px;">'+
+            '<button data-react="'+p.id+'" style="border:1.5px solid var(--border);background:'+(reacted?'var(--chip-bg)':'var(--card)')+';border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);">👍 '+(count>0?count:'')+'</button>'+
+            (count>0 ? '<span data-who-reacted="'+p.id+'" style="font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;text-decoration:underline;">quem curtiu</span>' : '')+
+            (isAdmin() ? '<button data-pin="'+p.id+'" style="border:0;background:transparent;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">'+(p.fixado?'Desafixar':'Fixar')+'</button>' : '')+
+            (isAdmin() ? '<span data-who-viewed="'+p.id+'" style="margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">👁 '+viewCount+' visualizaram</span>' : '')+
+          '</div>'+
+        '</div>';
+      }).join('');
+    }
     wrap.querySelectorAll('button[data-react]').forEach(function(btn){
       btn.addEventListener('click', function(){ toggleMuralReaction(Number(btn.getAttribute('data-react'))); });
     });
     wrap.querySelectorAll('button[data-pin]').forEach(function(btn){
       btn.addEventListener('click', function(){ toggleMuralPin(Number(btn.getAttribute('data-pin'))); });
     });
+    wrap.querySelectorAll('[data-who-reacted]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var postId = Number(el.getAttribute('data-who-reacted'));
+        var names = state.muralReactions.filter(function(r){return r.postId===postId;}).map(function(r){return userName(r.username);});
+        alert('Curtiram:\n'+names.join('\n'));
+      });
+    });
+    wrap.querySelectorAll('[data-who-viewed]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var postId = Number(el.getAttribute('data-who-viewed'));
+        var rows = state.muralViews.filter(function(v){return v.postId===postId;});
+        if(rows.length===0){ alert('Ninguém visualizou esse aviso ainda.'); return; }
+        var lines = rows.map(function(v){ return userName(v.username)+' — '+fmtWhen(v.vistoEm); });
+        alert('Visualizaram:\n'+lines.join('\n'));
+      });
+    });
+
+    markMuralPostsAsViewed(posts);
   }
+
+  async function markMuralPostsAsViewed(posts){
+    var me = state.session.username;
+    var toMark = posts.filter(function(p){
+      return !state.muralViews.some(function(v){ return v.postId===p.id && v.username===me; });
+    });
+    if(toMark.length===0) return;
+    if(state.conn==='online'){
+      try{
+        await sb.from('mural_visualizacoes').upsert(toMark.map(function(p){ return {post_id:p.id, username:me}; }), {onConflict:'post_id,username'});
+        await reloadMuralViewsFromSb();
+      }catch(err){}
+    } else {
+      toMark.forEach(function(p){ state.muralViews.push({postId:p.id, username:me, vistoEm:new Date().toISOString()}); });
+      saveLocalList(LS_MURAL_VIEWS, state.muralViews);
+    }
+  }
+
   async function toggleMuralReaction(postId){
     var me = state.session.username;
     var already = iReacted(postId);
@@ -1930,27 +2040,47 @@
     }
     renderMural();
   }
+  async function uploadMuralFile(file){
+    var ext = file.name.split('.').pop().toLowerCase();
+    var tipo = ext==='pdf' ? 'pdf' : 'imagem';
+    var path = Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
+    var up = await sb.storage.from('mural-anexos').upload(path, file);
+    if(up.error) throw up.error;
+    var pub = sb.storage.from('mural-anexos').getPublicUrl(path);
+    return {url: pub.data.publicUrl, nome: file.name, tipo: tipo};
+  }
   document.getElementById('mural-post-send').addEventListener('click', async function(){
     var input = document.getElementById('mural-post-input');
     var texto = input.value.trim();
-    if(!texto) return;
+    if(!texto && !muralPendingFile) return;
     var autor = state.session.username;
     if(state.conn==='online'){
       try{
-        var res = await sb.from('mural_posts').insert({autor:autor, texto:texto});
+        var row = {autor:autor, texto:texto};
+        if(muralPendingFile){
+          if(!window.sb && !sb){ throw new Error('sem conexão para enviar arquivo'); }
+          var uploaded = await uploadMuralFile(muralPendingFile);
+          row.anexo_url = uploaded.url; row.anexo_nome = uploaded.nome; row.anexo_tipo = uploaded.tipo;
+        }
+        var res = await sb.from('mural_posts').insert(row);
         if(res.error) throw res.error;
         await reloadMuralFromSb();
       }catch(err){
         alert('Não consegui publicar o aviso. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
+      if(muralPendingFile){ alert('Anexar arquivo só funciona com o site conectado ao Supabase (modo local não tem onde guardar o arquivo).'); return; }
       var nid = state.muralPosts.reduce(function(m,x){return Math.max(m,x.id);},0)+1;
-      state.muralPosts.push({id:nid, autor:autor, texto:texto, criadoEm:new Date().toISOString(), fixado:false});
+      state.muralPosts.push({id:nid, autor:autor, texto:texto, criadoEm:new Date().toISOString(), fixado:false, anexoUrl:'', anexoNome:'', anexoTipo:''});
       saveLocalList(LS_MURAL_POSTS, state.muralPosts);
     }
     input.value='';
+    muralPendingFile = null;
+    document.getElementById('mural-file-input').value = '';
+    document.getElementById('mural-file-chip').classList.add('hidden');
     renderMural();
   });
+
 
   // ----- CAIXAS DE CONVERSA (com audiência) -----
   function infoBoxAccessUsernames(boxId){
@@ -3198,6 +3328,7 @@
     state.infoBoxAccess = loadLocalList(LS_INFO_ACCESS);
     state.taskComments = loadLocalList(LS_TASK_COMMENTS);
     state.muralReactions = loadLocalList(LS_MURAL_REACTIONS);
+    state.muralViews = loadLocalList(LS_MURAL_VIEWS);
     state.readMarks = (function(){ try{ return JSON.parse(localStorage.getItem(LS_READ_MARKS)||'{}'); }catch(e){ return {}; } })();
   }
   async function boot(){
