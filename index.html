@@ -405,8 +405,9 @@
         <div class="person-filter-wrap">
           <button class="person-filter-btn" id="person-filter-trigger" title="Filtrar por pessoa"><span class="pf-av" id="pf-av">T</span><span id="pf-label">Todos</span><span style="color:var(--muted);">▾</span></button>
           <div class="floating-panel hidden" id="person-filter-panel">
-            <div class="fp-title">FILTRAR POR PESSOA</div>
+            <div class="fp-title">FILTRAR POR PESSOA (pode marcar mais de uma)</div>
             <div class="chips-grid" id="person-chips"></div>
+            <button type="button" id="person-filter-close" style="width:100%;margin-top:8px;border:0;background:var(--brand-green);color:#fff;font-weight:800;font-size:12px;padding:8px;border-radius:9px;cursor:pointer;">Concluído</button>
           </div>
         </div>
         <span id="board-month-toggle" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brand-green);cursor:pointer;text-decoration:underline;white-space:nowrap;">Todos os meses</span>
@@ -419,9 +420,9 @@
 
     <main>
       <div class="mobile-col-switch" id="mobile-col-switch">
-        <button data-status="todo">A fazer</button>
-        <button data-status="doing">Fazendo</button>
-        <button data-status="done">Feito</button>
+        <button data-status="todo">Não iniciado</button>
+        <button data-status="doing">Em andamento</button>
+        <button data-status="done">Concluído</button>
       </div>
       <div id="kanban-view" class="kanban"></div>
       <div id="list-view" class="hidden"></div>
@@ -531,7 +532,7 @@
         <div id="f-prazo-lock-note" class="hidden" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;">🔒 Só o admin pode alterar o prazo depois que a tarefa já foi criada.</div>
       </div>
       <div class="field"><label>Status</label>
-        <select id="f-status"><option value="todo">A fazer</option><option value="doing">Fazendo</option><option value="done">Feito</option></select>
+        <select id="f-status"><option value="todo">Não iniciado</option><option value="doing">Em andamento</option><option value="done">Concluído</option></select>
       </div>
       <div class="field"><label>Prioridade</label>
         <select id="f-prioridade"><option value="baixa">Baixa</option><option value="normal" selected>Normal</option><option value="urgente">Urgente</option></select>
@@ -785,9 +786,9 @@
   var SB_KEY_BUILTIN = 'sb_publishable_QFcekvlufXKjuvhplrb_2w_I3fjFhv4';
 
   var COLS = [
-    {key:'todo', label:'A fazer', color:'#8b86a0'},
-    {key:'doing', label:'Fazendo', color:'#f0a020'},
-    {key:'done', label:'Feito', color:'#16a070'},
+    {key:'todo', label:'Não iniciado', color:'#8b86a0'},
+    {key:'doing', label:'Em andamento', color:'#f0a020'},
+    {key:'done', label:'Concluído', color:'#16a070'},
   ];
 
   // ---------- password hashing (SHA-256, salted with the username) ----------
@@ -948,7 +949,7 @@
     tasks: [],
     taskComments: [],
     session: loadSession(),
-    person: 'all',
+    selectedPeople: [],
     typeFilter: 'all',
     view: 'kanban',
     draft: null,
@@ -1336,7 +1337,7 @@
   function showApp(){
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
-    state.person = 'all';
+    state.selectedPeople = [];
     showRandomQuote();
     render();
   }
@@ -1410,6 +1411,9 @@
   document.getElementById('person-filter-trigger').addEventListener('click', function(e){
     e.stopPropagation();
     toggleFloatingPanel('person-filter-panel', 'tools-panel');
+  });
+  document.getElementById('person-filter-close').addEventListener('click', function(){
+    document.getElementById('person-filter-panel').classList.add('hidden');
   });
   document.addEventListener('click', function(e){
     var toolsPanel = document.getElementById('tools-panel');
@@ -2263,7 +2267,7 @@
     return state.tasks.filter(function(t){
       var canSee = isAdmin() || !t.sigiloso || (t.responsaveis||[]).indexOf(me)!==-1;
       if(!canSee) return false;
-      if(state.person!=='all' && (t.responsaveis||[]).indexOf(state.person)===-1) return false;
+      if(state.selectedPeople.length>0 && !(t.responsaveis||[]).some(function(u){return state.selectedPeople.indexOf(u)!==-1;})) return false;
       if(state.typeFilter!=='all' && t.tipo!==state.typeFilter) return false;
       if(!state.boardShowAllMonths){
         var taskMonth = String(t.prazo||'').slice(0,7);
@@ -2319,17 +2323,23 @@
     var pfAv = document.getElementById('pf-av');
     var pfLabel = document.getElementById('pf-label');
     var pfTrigger = document.getElementById('person-filter-trigger');
-    if(state.person==='all'){
+    if(state.selectedPeople.length===0){
       pfAv.style.background = 'var(--muted)';
       pfAv.textContent = 'T';
       pfLabel.textContent = 'Todos';
       pfTrigger.title = 'Filtrar por pessoa (mostrando: Todos)';
-    } else {
-      var pSel = pal(state.person);
+    } else if(state.selectedPeople.length===1){
+      var only = state.selectedPeople[0];
+      var pSel = pal(only);
       pfAv.style.background = pSel.avatar;
-      pfAv.textContent = (userName(state.person)||'?').charAt(0).toUpperCase();
-      pfLabel.textContent = userName(state.person);
-      pfTrigger.title = 'Filtrar por pessoa (mostrando: '+userName(state.person)+')';
+      pfAv.textContent = (userName(only)||'?').charAt(0).toUpperCase();
+      pfLabel.textContent = userName(only);
+      pfTrigger.title = 'Filtrar por pessoa (mostrando: '+userName(only)+')';
+    } else {
+      pfAv.style.background = 'var(--brand-green)';
+      pfAv.textContent = String(state.selectedPeople.length);
+      pfLabel.textContent = state.selectedPeople.length+' pessoas';
+      pfTrigger.title = 'Filtrar por pessoa (mostrando: '+state.selectedPeople.map(userName).join(', ')+')';
     }
 
     var visible = visibleTasks();
@@ -2352,21 +2362,27 @@
       var chipsEl = document.getElementById('person-chips');
       chipsEl.innerHTML = '';
       var todosEl = document.createElement('button');
-      todosEl.className = 'person-chip' + (state.person==='all' ? ' active' : '');
+      todosEl.className = 'person-chip' + (state.selectedPeople.length===0 ? ' active' : '');
       todosEl.style.background = 'var(--chip-bg)';
       todosEl.innerHTML = '<span class="av" style="background:var(--muted)"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:var(--ink)">Todos</span>';
-      todosEl.addEventListener('click', function(){ state.person='all'; document.getElementById('person-filter-panel').classList.add('hidden'); render(); });
+      todosEl.addEventListener('click', function(){ state.selectedPeople=[]; document.getElementById('person-filter-panel').classList.add('hidden'); render(); });
       chipsEl.appendChild(todosEl);
       var members = Object.keys(state.users)
         .sort(function(a,b){ return state.users[a].displayName.localeCompare(state.users[b].displayName,'pt'); });
       members.forEach(function(key){
         var u = state.users[key];
         var p = pal(key);
+        var isSel = state.selectedPeople.indexOf(key)!==-1;
         var el = document.createElement('button');
-        el.className = 'person-chip' + (state.person===key ? ' active' : '');
-        el.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+u.displayName+'</span>';
+        el.className = 'person-chip' + (isSel ? ' active' : '');
+        el.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+u.displayName+'</span>'+(isSel?'<span style="margin-left:auto;color:var(--brand-green);font-weight:900;">✓</span>':'');
         el.style.background = p.tint;
-        el.addEventListener('click', function(){ state.person = key; document.getElementById('person-filter-panel').classList.add('hidden'); render(); });
+        el.style.width = '100%';
+        el.addEventListener('click', function(){
+          var idx = state.selectedPeople.indexOf(key);
+          if(idx===-1) state.selectedPeople.push(key); else state.selectedPeople.splice(idx,1);
+          render();
+        });
         chipsEl.appendChild(el);
       });
     }
@@ -2721,7 +2737,7 @@
   }
 
   // ---------- RELATÓRIO (Excel) ----------
-  function statusLabel(s){ return s==='todo'?'A fazer':s==='doing'?'Fazendo':'Feito'; }
+  function statusLabel(s){ return s==='todo'?'Não iniciado':s==='doing'?'Em andamento':'Concluído'; }
   function reportableTasks(){
     var me = state.session.username;
     return state.tasks.filter(function(t){
