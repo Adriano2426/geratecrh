@@ -301,6 +301,10 @@
   .vault-field-row button{border:0;background:transparent;color:var(--accent);font-weight:700;font-size:11.5px;padding:4px 8px;border-radius:7px;}
   .vault-field-row button:hover{background:var(--border2);}
   .access-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto;margin-bottom:8px;}
+  .resp-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;}
+  .resp-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 6px;border-radius:20px;font-weight:700;font-size:12.5px;}
+  .resp-pill .av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;}
+  .resp-pill-empty{font-size:12px;color:var(--muted);font-weight:600;padding:4px 0;}
   .access-list label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:6px 8px;border-radius:8px;}
   .access-list input[type="checkbox"]{width:16px !important;height:16px;flex:none;margin:0;accent-color:var(--accent);}
   .access-list label:hover{background:var(--bg);}
@@ -555,7 +559,11 @@
       <div class="field"><label>Tipo</label>
         <select id="f-tipo"><option value="atividade">Atividade</option><option value="projeto">Projeto</option></select>
       </div>
-      <div class="field" id="f-resp-field"><label>Responsáveis (pode marcar mais de um)</label><div class="access-list" id="f-responsaveis-list"></div></div>
+      <div class="field" id="f-resp-field">
+        <label>Responsáveis</label>
+        <div id="f-responsaveis-view" class="resp-pills"></div>
+        <div class="access-list" id="f-responsaveis-list"></div>
+      </div>
       <div class="field"><label>Prazo</label><input type="date" id="f-prazo" required>
         <div id="f-prazo-lock-note" class="hidden" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;">🔒 Só o admin pode alterar o prazo depois que a tarefa já foi criada.</div>
       </div>
@@ -1287,7 +1295,7 @@
       var u = state.users[key];
       var opt = document.createElement('option');
       opt.value = key;
-      opt.textContent = u.displayName + (u.role==='admin' ? ' (administrador)' : '');
+      opt.textContent = u.displayName;
       loginUserSel.appendChild(opt);
     });
   }
@@ -1499,6 +1507,18 @@
     return (task.responsaveis||[]).indexOf(state.session.username) !== -1;
   }
 
+  function renderRespPills(list){
+    var wrap = document.getElementById('f-responsaveis-view');
+    if(!list || list.length===0){
+      wrap.innerHTML = '<div class="resp-pill-empty">Sem responsável definido</div>';
+      return;
+    }
+    wrap.innerHTML = list.map(function(u){
+      var p = pal(u);
+      return '<span class="resp-pill" style="background:'+p.tint+';color:'+p.ink+';"><span class="av" style="background:'+p.avatar+';"><svg viewBox="0 0 24 24" width="11" height="11" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span>'+escapeHtml(userName(u))+'</span>';
+    }).join('');
+  }
+
   function openTaskModal(task){
     var isNew = !task;
     state.draft = task ? Object.assign({}, task, {responsaveis:(task.responsaveis||[]).slice()}) : {
@@ -1519,7 +1539,15 @@
     document.getElementById('f-recorrencia').value = state.draft.recorrencia || 'nenhuma';
     document.getElementById('f-anexo').value = state.draft.anexoUrl || '';
 
-    buildAccessChecklist(fRespList, state.draft.responsaveis);
+    if(isAdmin()){
+      document.getElementById('f-responsaveis-list').classList.remove('hidden');
+      document.getElementById('f-responsaveis-view').classList.add('hidden');
+      buildAccessChecklist(fRespList, state.draft.responsaveis);
+    } else {
+      document.getElementById('f-responsaveis-list').classList.add('hidden');
+      document.getElementById('f-responsaveis-view').classList.remove('hidden');
+      renderRespPills(state.draft.responsaveis);
+    }
 
     document.getElementById('f-sigiloso-field').classList.toggle('hidden', !isAdmin());
     document.getElementById('f-sigiloso').checked = !!state.draft.sigiloso;
@@ -1616,7 +1644,7 @@
     d.titulo = document.getElementById('f-titulo').value.trim() || 'Sem título';
     d.descricao = document.getElementById('f-descricao').value;
     d.tipo = document.getElementById('f-tipo').value;
-    d.responsaveis = readAccessChecklist(fRespList);
+    d.responsaveis = isAdmin() ? readAccessChecklist(fRespList) : d.responsaveis;
     d.prazo = (d.id!=null && !isAdmin()) ? wasPrazo : document.getElementById('f-prazo').value;
     d.status = document.getElementById('f-status').value;
     d.sigiloso = isAdmin() ? document.getElementById('f-sigiloso').checked : (d.sigiloso||false);
