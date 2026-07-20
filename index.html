@@ -1287,8 +1287,6 @@
   function populateLoginSelect(){
     loginUserSel.innerHTML = '';
     var order = Object.keys(state.users).sort(function(a,b){
-      if(state.users[a].role==='admin') return -1;
-      if(state.users[b].role==='admin') return 1;
       return state.users[a].displayName.localeCompare(state.users[b].displayName,'pt');
     });
     order.forEach(function(key){
