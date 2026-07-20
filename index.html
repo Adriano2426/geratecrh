@@ -146,7 +146,7 @@
     main{padding:12px 16px 30px;}
     .info-section, #info-landing{padding-left:16px;padding-right:16px;}
     .info-landing{padding:16px;}
-    .maintabs{padding:0 10px;overflow-x:auto;white-space:nowrap;}
+    .nav-switch-wrap{padding:12px 16px;}
     .row{gap:8px;}
     .cal-grid{padding:0 10px 30px;gap:4px;}
     .cal-cell{min-height:64px;padding:5px;}
@@ -212,10 +212,32 @@
   .conn-status-line.on .dot{background:#16a070;}
   .conn-status-line.err .dot{background:#c4314b;}
 
-  /* ---------- MAIN TABS ---------- */
-  .maintabs{display:flex;gap:6px;padding:0 32px;background:var(--card);border-bottom:1px solid var(--border);}
-  .maintabs button{border:0;background:transparent;font-weight:700;font-size:13px;padding:14px 16px;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px;}
-  .maintabs button.active{color:var(--accent);border-bottom-color:var(--accent);}
+  /* ---------- MAIN NAV SWITCH (painel flutuante) ---------- */
+  .nav-switch-wrap{position:relative;padding:14px 32px;background:var(--card);border-bottom:1px solid var(--border);}
+  .nav-switch-btn{display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--ink);font-weight:800;font-size:13.5px;padding:9px 15px;border-radius:11px;cursor:pointer;}
+  .nav-switch-btn:hover{border-color:var(--brand-green);}
+  .nav-switch-wrap .floating-panel{top:52px;left:32px;right:auto;min-width:220px;}
+  .nav-switch-wrap .fp-item.active{color:var(--brand-green);background:var(--chip-bg);}
+
+  /* ---------- INFO / VAULT GRIDS ---------- */
+  .overview-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+  .ov-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;}
+  .ov-card.wide{grid-column:1/-1;}
+  .ov-card h3{font-size:13px;font-weight:800;margin:0 0 14px;color:var(--ink);}
+  .ov-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:12px;font-weight:700;color:var(--muted);}
+  .ov-bar-row .lbl{width:110px;flex:none;display:flex;align-items:center;gap:6px;color:var(--ink);}
+  .ov-bar-track{flex:1;height:9px;border-radius:6px;background:var(--track-bg);overflow:hidden;}
+  .ov-bar-fill{height:100%;border-radius:6px;}
+  .ov-bar-row .num{width:26px;flex:none;text-align:right;color:var(--ink);}
+  .ov-big-num{font-family:'Anton',sans-serif;font-size:34px;color:var(--brand-green);}
+  .ov-big-sub{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .ov-stat-row{display:flex;gap:14px;flex-wrap:wrap;}
+  .ov-stat{flex:1;min-width:100px;}
+  .ov-person-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2);font-size:12.5px;}
+  .ov-person-row:last-child{border-bottom:0;}
+  .ov-list-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px;cursor:pointer;}
+  .ov-list-item:last-child{border-bottom:0;}
+  .ov-list-item .t{flex:1;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   /* ---------- INFO / VAULT GRIDS ---------- */
   .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
@@ -375,13 +397,23 @@
 
   <div id="quote-box" class="quote-box" style="margin:16px 32px 0;"></div>
 
-  <div class="maintabs" id="main-tabs">
-    <button class="active" data-tab="board">🗂️ Quadro de Tarefas</button>
-    <button data-tab="calendar">📅 Calendário</button>
-    <button data-tab="info">📣 Informações Gerais</button>
-    <button data-tab="vault">🔐 Acessos e Senhas</button>
+  <div class="nav-switch-wrap">
+    <button class="nav-switch-btn" id="nav-switch-trigger"><span id="nav-switch-icon">📊</span><span id="nav-switch-label">Visão Geral</span><span style="color:var(--muted);">▾</span></button>
+    <div class="floating-panel hidden" id="nav-switch-panel">
+      <div class="fp-item" data-tab="overview">📊 Visão Geral</div>
+      <div class="fp-item" data-tab="board">🗂️ Quadro de Tarefas</div>
+      <div class="fp-item" data-tab="calendar">📅 Calendário</div>
+      <div class="fp-item" data-tab="info">📣 Informações Gerais</div>
+      <div class="fp-item" data-tab="vault">🔐 Acessos e Senhas</div>
+    </div>
   </div>
 
+
+  <div id="overview-section" class="hidden">
+    <main>
+      <div id="overview-content" class="overview-grid"></div>
+    </main>
+  </div>
 
   <div id="board-section">
     <div id="my-pending-banner" class="hidden" style="margin:16px 32px 0;padding:12px 16px;border-radius:12px;background:var(--chip-bg);border:1px solid var(--border);font-size:13px;font-weight:700;"></div>
@@ -411,10 +443,6 @@
           </div>
         </div>
         <span id="board-month-toggle" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brand-green);cursor:pointer;text-decoration:underline;white-space:nowrap;">Todos os meses</span>
-      </div>
-      <div class="progress-row">
-        <div class="bar-track"><div class="bar-fill" id="bar-fill" style="width:0%"></div></div>
-        <div class="overdue-note" id="overdue-note"></div>
       </div>
     </div>
 
@@ -955,7 +983,7 @@
     draft: null,
     dragId: null,
     conn: 'local', // 'local' | 'connecting' | 'online' | 'error'
-    mainTab: 'board', // 'board' | 'info' | 'vault' | 'calendar'
+    mainTab: 'overview', // 'overview' | 'board' | 'info' | 'vault' | 'calendar'
     infoSubTab: null, // null (landing) | 'mural' | 'conversas'
     infoBoxes: [],
     infoMsgs: [],
@@ -1422,6 +1450,9 @@
     var pfPanel = document.getElementById('person-filter-panel');
     var pfWrap = document.querySelector('.person-filter-wrap');
     if(pfPanel && !pfPanel.classList.contains('hidden') && pfWrap && !pfWrap.contains(e.target)) pfPanel.classList.add('hidden');
+    var navPanel = document.getElementById('nav-switch-panel');
+    var navWrap = document.querySelector('.nav-switch-wrap');
+    if(navPanel && !navPanel.classList.contains('hidden') && navWrap && !navWrap.contains(e.target)) navPanel.classList.add('hidden');
   });
   document.getElementById('type-tabs').addEventListener('click', function(e){
     var btn = e.target.closest('button'); if(!btn) return;
@@ -1438,9 +1469,22 @@
   });
   document.getElementById('btn-new').addEventListener('click', function(){ openTaskModal(null); });
   document.getElementById('fp-team').addEventListener('click', function(){ document.getElementById('tools-panel').classList.add('hidden'); openTeamModal(); });
-  document.getElementById('main-tabs').addEventListener('click', function(e){
-    var btn = e.target.closest('button'); if(!btn) return;
-    state.mainTab = btn.getAttribute('data-tab');
+  var NAV_LABELS = {
+    overview: {icon:'📊', label:'Visão Geral'},
+    board: {icon:'🗂️', label:'Quadro de Tarefas'},
+    calendar: {icon:'📅', label:'Calendário'},
+    info: {icon:'📣', label:'Informações Gerais'},
+    vault: {icon:'🔐', label:'Acessos e Senhas'},
+  };
+  document.getElementById('nav-switch-trigger').addEventListener('click', function(e){
+    e.stopPropagation();
+    toggleFloatingPanel('nav-switch-panel', 'tools-panel');
+    document.getElementById('person-filter-panel') && document.getElementById('person-filter-panel').classList.add('hidden');
+  });
+  document.getElementById('nav-switch-panel').addEventListener('click', function(e){
+    var item = e.target.closest('.fp-item'); if(!item) return;
+    state.mainTab = item.getAttribute('data-tab');
+    document.getElementById('nav-switch-panel').classList.add('hidden');
     render();
   });
 
@@ -2303,15 +2347,21 @@
     document.getElementById('who-role').textContent = isAdmin() ? 'ADMIN' : 'USUÁRIO';
     document.getElementById('who-name').textContent = state.session.displayName;
 
-    document.querySelectorAll('#main-tabs button').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-tab')===state.mainTab);
+    var navInfo = NAV_LABELS[state.mainTab] || NAV_LABELS.overview;
+    document.getElementById('nav-switch-icon').textContent = navInfo.icon;
+    document.getElementById('nav-switch-label').textContent = navInfo.label;
+    document.querySelectorAll('#nav-switch-panel .fp-item').forEach(function(it){
+      it.classList.toggle('active', it.getAttribute('data-tab')===state.mainTab);
     });
+
+    document.getElementById('overview-section').classList.toggle('hidden', state.mainTab!=='overview');
     document.getElementById('board-section').classList.toggle('hidden', state.mainTab!=='board');
     document.getElementById('info-section').classList.toggle('hidden', state.mainTab!=='info');
     document.getElementById('vault-section').classList.toggle('hidden', state.mainTab!=='vault');
     document.getElementById('calendar-section').classList.toggle('hidden', state.mainTab!=='calendar');
     document.getElementById('btn-new').classList.toggle('hidden', state.mainTab!=='board');
 
+    if(state.mainTab==='overview'){ renderOverview(); return; }
     if(state.mainTab==='info'){ renderInfoMain(); return; }
     if(state.mainTab==='vault'){ renderVaultList(); return; }
     if(state.mainTab==='calendar'){ renderCalendar(); return; }
@@ -2347,9 +2397,6 @@
     var done = visible.filter(function(t){return t.status==='done';}).length;
     var pct = total ? Math.round(done/total*100) : 0;
     document.getElementById('pct-val').textContent = pct+'%';
-    document.getElementById('bar-fill').style.width = pct+'%';
-    var overdue = visible.filter(function(t){ return t.status!=='done' && fmtPrazo(t.prazo).days<0; });
-    document.getElementById('overdue-note').textContent = overdue.length ? (overdue.length+' atrasada'+(overdue.length>1?'s':'')) : '';
 
     document.querySelectorAll('#type-tabs button').forEach(function(b){
       b.classList.toggle('active', b.getAttribute('data-type')===state.typeFilter);
@@ -2744,6 +2791,94 @@
       return isAdmin() || !t.sigiloso || (t.responsaveis||[]).indexOf(me)!==-1;
     });
   }
+
+  // ---------- VISÃO GERAL ----------
+  function renderOverview(){
+    var wrap = document.getElementById('overview-content');
+    var all = reportableTasks();
+    var total = all.length;
+    var byStatus = {todo:0, doing:0, done:0};
+    all.forEach(function(t){ byStatus[t.status] = (byStatus[t.status]||0)+1; });
+    var pct = total ? Math.round(byStatus.done/total*100) : 0;
+
+    var open = all.filter(function(t){ return t.status!=='done'; });
+    var overdue = open.filter(function(t){ return fmtPrazo(t.prazo).days<0; });
+    var next7 = open.filter(function(t){ var d=fmtPrazo(t.prazo).days; return d>=0 && d<=7; })
+      .sort(function(a,b){ return a.prazo.localeCompare(b.prazo); });
+
+    var byPrio = {urgente:0, normal:0, baixa:0};
+    open.forEach(function(t){ byPrio[t.prioridade||'normal'] = (byPrio[t.prioridade||'normal']||0)+1; });
+
+    var atividades = all.filter(function(t){return t.tipo==='atividade';}).length;
+    var projetos = all.filter(function(t){return t.tipo==='projeto';}).length;
+
+    var byPerson = {};
+    open.forEach(function(t){
+      (t.responsaveis||[]).forEach(function(u){
+        byPerson[u] = byPerson[u] || {open:0, overdue:0};
+        byPerson[u].open++;
+        if(fmtPrazo(t.prazo).days<0) byPerson[u].overdue++;
+      });
+    });
+    var personKeys = Object.keys(byPerson).sort(function(a,b){ return byPerson[b].open - byPerson[a].open; });
+
+    function statusBar(key, label, color){
+      var n = byStatus[key]||0;
+      var w = total ? Math.round(n/total*100) : 0;
+      return '<div class="ov-bar-row"><span class="lbl"><span style="width:8px;height:8px;border-radius:50%;background:'+color+';display:inline-block;"></span>'+label+'</span><div class="ov-bar-track"><div class="ov-bar-fill" style="width:'+w+'%;background:'+color+';"></div></div><span class="num">'+n+'</span></div>';
+    }
+    function prioBar(key, label, color){
+      var n = byPrio[key]||0;
+      var maxOpen = Math.max(open.length,1);
+      var w = Math.round(n/maxOpen*100);
+      return '<div class="ov-bar-row"><span class="lbl">'+label+'</span><div class="ov-bar-track"><div class="ov-bar-fill" style="width:'+w+'%;background:'+color+';"></div></div><span class="num">'+n+'</span></div>';
+    }
+
+    var html = '';
+
+    html += '<div class="ov-card"><h3>Progresso geral</h3><div class="ov-big-num">'+pct+'%</div><div class="ov-big-sub">'+byStatus.done+' de '+total+' tarefa'+(total===1?'':'s')+' concluída'+(byStatus.done===1?'':'s')+'</div>'+
+      '<div style="margin-top:16px;">'+statusBar('todo', COLS[0].label, COLS[0].color)+statusBar('doing', COLS[1].label, COLS[1].color)+statusBar('done', COLS[2].label, COLS[2].color)+'</div></div>';
+
+    html += '<div class="ov-card"><h3>Atrasadas</h3><div class="ov-big-num" style="color:var(--danger-text)">'+overdue.length+'</div><div class="ov-big-sub">tarefa'+(overdue.length===1?'':'s')+' em aberto passou do prazo</div>'+
+      '<div style="margin-top:14px;">'+(overdue.length===0 ? '<div class="empty-note" style="padding:10px 0;">Nenhuma 🎉</div>' : overdue.slice(0,6).map(function(t){
+        var f = fmtPrazo(t.prazo);
+        return '<div class="ov-list-item" data-task-id="'+t.id+'"><span class="'+typeStyle(t.tipo)+'">'+(t.tipo==='projeto'?'PROJ':'ATIV')+'</span><span class="t">'+escapeHtml(t.titulo)+'</span><span style="color:var(--danger-text);font-weight:800;white-space:nowrap;">'+Math.abs(f.days)+'d</span></div>';
+      }).join(''))+'</div></div>';
+
+    html += '<div class="ov-card"><h3>Prioridade (tarefas em aberto)</h3>'+prioBar('urgente','Urgente','#c4314b')+prioBar('normal','Normal','#8b86a0')+prioBar('baixa','Baixa','#2f8fe0')+'</div>';
+
+    html += '<div class="ov-card"><h3>Atividades x Projetos</h3><div class="ov-stat-row">'+
+      '<div class="ov-stat"><div class="ov-big-num" style="font-size:26px;">'+atividades+'</div><div class="ov-big-sub">Atividades</div></div>'+
+      '<div class="ov-stat"><div class="ov-big-num" style="font-size:26px;color:var(--ink);">'+projetos+'</div><div class="ov-big-sub">Projetos</div></div>'+
+      '</div></div>';
+
+    html += '<div class="ov-card"><h3>Próximos 7 dias</h3>'+(next7.length===0 ? '<div class="empty-note" style="padding:10px 0;">Nada vencendo essa semana</div>' : next7.slice(0,6).map(function(t){
+      var f = fmtPrazo(t.prazo);
+      return '<div class="ov-list-item" data-task-id="'+t.id+'"><span class="'+typeStyle(t.tipo)+'">'+(t.tipo==='projeto'?'PROJ':'ATIV')+'</span><span class="t">'+escapeHtml(t.titulo)+'</span><span style="color:var(--muted);font-weight:700;white-space:nowrap;">'+f.rel+'</span></div>';
+    }).join(''))+'</div>';
+
+    html += '<div class="ov-card wide"><h3>Por pessoa (tarefas em aberto)</h3>'+(personKeys.length===0 ? '<div class="empty-note" style="padding:10px 0;">Ninguém com tarefas em aberto</div>' : personKeys.map(function(u){
+      var p = pal(u);
+      var info = byPerson[u];
+      return '<div class="ov-person-row">'+
+        '<span class="foot-av" style="background:'+p.avatar+';flex:none;"><svg viewBox="0 0 24 24" width="11" height="11" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span>'+
+        '<span style="width:100px;flex:none;font-weight:700;color:var(--ink);">'+escapeHtml(userName(u))+'</span>'+
+        '<div class="ov-bar-track" style="flex:1;"><div class="ov-bar-fill" style="width:'+Math.round(info.open/Math.max.apply(null,personKeys.map(function(k){return byPerson[k].open;}))*100)+'%;background:'+p.avatar+';"></div></div>'+
+        '<span style="width:34px;text-align:right;font-weight:800;color:var(--ink);">'+info.open+'</span>'+
+        (info.overdue>0 ? '<span style="color:var(--danger-text);font-weight:800;font-size:11px;width:50px;text-align:right;">'+info.overdue+' atr.</span>' : '<span style="width:50px;"></span>')+
+        '</div>';
+    }).join(''))+'</div>';
+
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('.ov-list-item[data-task-id]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var id = Number(el.getAttribute('data-task-id'));
+        var t = state.tasks.find(function(x){ return x.id===id; });
+        if(t) openTaskModal(t);
+      });
+    });
+  }
+
   function buildReportRows(tipo){
     return reportableTasks().filter(function(t){ return t.tipo===tipo; }).map(function(t){
       var f = fmtPrazo(t.prazo);
