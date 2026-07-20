@@ -568,7 +568,7 @@
       <div class="field" id="f-resp-field">
         <label>Responsáveis</label>
         <div id="f-responsaveis-view" class="resp-pills"></div>
-        <div class="access-list" id="f-responsaveis-list"></div>
+        <div class="chips-grid" id="f-responsaveis-list" style="grid-template-columns:1fr;max-height:220px;overflow:auto;padding-right:2px;"></div>
       </div>
       <div class="field"><label>Prazo</label><input type="date" id="f-prazo" required>
         <div id="f-prazo-lock-note" class="hidden" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;">🔒 Só o admin pode alterar o prazo depois que a tarefa já foi criada.</div>
@@ -737,7 +737,7 @@
 </div>
 
 <!-- ============ TAREFAS DO DIA (calendário) ============ -->
-<div class="floating-panel hidden" id="generic-popover" style="position:fixed;max-height:260px;overflow:auto;"></div>
+<div class="floating-panel hidden" id="generic-popover" style="position:fixed;max-height:260px;overflow:auto;min-width:auto;width:max-content;max-width:min(280px, calc(100vw - 24px));z-index:1200;"></div>
 
 <div class="overlay hidden" id="day-overlay">
   <div class="modal">
@@ -1467,11 +1467,12 @@
     pop.innerHTML = '<div class="fp-title">'+escapeHtml(titleText)+'</div>'+itemsHtml;
     pop.classList.remove('hidden');
     var r = triggerEl.getBoundingClientRect();
-    var popWidth = 230;
+    var popWidth = pop.offsetWidth || 180;
+    var popHeight = pop.offsetHeight || 100;
     var left = Math.min(r.left, window.innerWidth - popWidth - 12);
     left = Math.max(8, left);
     var top = r.bottom + 6;
-    if(top + 200 > window.innerHeight) top = Math.max(8, r.top - 206);
+    if(top + popHeight > window.innerHeight) top = Math.max(8, r.top - popHeight - 6);
     pop.style.left = left+'px';
     pop.style.top = top+'px';
   }
@@ -1580,7 +1581,7 @@
     if(isAdmin()){
       document.getElementById('f-responsaveis-list').classList.remove('hidden');
       document.getElementById('f-responsaveis-view').classList.add('hidden');
-      buildAccessChecklist(fRespList, state.draft.responsaveis);
+      buildPersonPillPicker(fRespList, state.draft.responsaveis, editable);
     } else {
       document.getElementById('f-responsaveis-list').classList.add('hidden');
       document.getElementById('f-responsaveis-view').classList.remove('hidden');
@@ -1595,7 +1596,6 @@
      document.getElementById('f-prioridade'), document.getElementById('f-recorrencia'), document.getElementById('f-anexo')].forEach(function(el){
       el.disabled = !editable;
     });
-    fRespList.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.disabled = !editable; });
 
     // O prazo só pode ser alterado pelo admin depois que a tarefa já foi criada
     var prazoField = document.getElementById('f-prazo');
@@ -1616,16 +1616,20 @@
   }
   function closeTaskModal(){ taskOverlay.classList.add('hidden'); state.draft=null; }
   document.getElementById('task-cancel').addEventListener('click', closeTaskModal);
-  document.getElementById('task-history-btn').addEventListener('click', async function(){
+  document.getElementById('task-history-btn').addEventListener('click', async function(e){
+    e.stopPropagation();
     if(!state.draft || state.draft.id==null) return;
     if(state.conn!=='online'){ alert('O histórico só fica disponível quando o site está conectado ao Supabase.'); return; }
     try{
       var res = await sb.from('tarefas_log').select('*').eq('tarefa_id', state.draft.id).order('criado_em', {ascending:false});
       if(res.error) throw res.error;
-      var linhas = (res.data||[]).map(function(l){
-        return fmtWhen(l.criado_em)+' — '+userName(l.autor)+': '+l.detalhe;
-      });
-      alert(linhas.length ? linhas.join('\n') : 'Nenhum histórico registrado ainda para esta tarefa.');
+      var itemsHtml = (res.data||[]).map(function(l){
+        return '<div class="fp-item" style="cursor:default;flex-direction:column;align-items:flex-start;gap:2px;">'+
+          '<span style="font-weight:800;">'+escapeHtml(userName(l.autor))+' <span style="font-weight:600;color:var(--muted);font-size:10.5px;">'+fmtWhen(l.criado_em)+'</span></span>'+
+          '<span style="font-size:11.5px;color:var(--muted);">'+escapeHtml(l.detalhe)+'</span>'+
+        '</div>';
+      }).join('');
+      showPopoverNear(this, 'HISTÓRICO DA TAREFA', itemsHtml || '<div class="fp-item" style="cursor:default;color:var(--muted);">Nenhum histórico registrado ainda.</div>');
     }catch(err){
       alert('Não consegui buscar o histórico. Detalhe técnico: '+(err && err.message ? err.message : err));
     }
@@ -1682,7 +1686,7 @@
     d.titulo = document.getElementById('f-titulo').value.trim() || 'Sem título';
     d.descricao = document.getElementById('f-descricao').value;
     d.tipo = document.getElementById('f-tipo').value;
-    d.responsaveis = isAdmin() ? readAccessChecklist(fRespList) : d.responsaveis;
+    d.responsaveis = isAdmin() ? readPersonPillPicker(fRespList) : d.responsaveis;
     d.prazo = (d.id!=null && !isAdmin()) ? wasPrazo : document.getElementById('f-prazo').value;
     d.status = document.getElementById('f-status').value;
     d.sigiloso = isAdmin() ? document.getElementById('f-sigiloso').checked : (d.sigiloso||false);
@@ -2308,6 +2312,43 @@
   }
   function readAccessChecklist(containerEl){
     return Array.from(containerEl.querySelectorAll('input[type="checkbox"]:checked')).map(function(cb){ return cb.value; });
+  }
+  function buildPersonPillPicker(containerEl, selectedUsernames, editable){
+    containerEl.innerHTML = '';
+    memberList().forEach(function(u){
+      var st = state.users[u];
+      var p = pal(u);
+      var isSel = selectedUsernames.indexOf(u)!==-1;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'person-chip' + (isSel ? ' active' : '');
+      btn.setAttribute('data-username', u);
+      btn.style.background = p.tint;
+      btn.style.width = '100%';
+      btn.disabled = !editable;
+      if(!editable) btn.style.opacity = '.7';
+      btn.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+escapeHtml(st.displayName)+'</span>'+(isSel?'<span class="pill-check" style="margin-left:auto;color:var(--brand-green);font-weight:900;">✓</span>':'');
+      if(editable){
+        btn.addEventListener('click', function(){
+          var nowSel = !btn.classList.contains('active');
+          btn.classList.toggle('active', nowSel);
+          var existing = btn.querySelector('.pill-check');
+          if(nowSel && !existing){
+            var chk = document.createElement('span');
+            chk.className = 'pill-check';
+            chk.style.cssText = 'margin-left:auto;color:var(--brand-green);font-weight:900;';
+            chk.textContent = '✓';
+            btn.appendChild(chk);
+          } else if(!nowSel && existing){
+            existing.remove();
+          }
+        });
+      }
+      containerEl.appendChild(btn);
+    });
+  }
+  function readPersonPillPicker(containerEl){
+    return Array.from(containerEl.querySelectorAll('.person-chip.active')).map(function(b){ return b.getAttribute('data-username'); });
   }
   function buildColorPicker(containerEl, selectedColor){
     containerEl.innerHTML = '';
