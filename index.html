@@ -1986,6 +1986,7 @@
             '<button data-react="'+p.id+'" style="border:1.5px solid var(--border);background:'+(reacted?'var(--chip-bg)':'var(--card)')+';border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);">👍 '+(count>0?count:'')+'</button>'+
             (count>0 ? '<span data-who-reacted="'+p.id+'" style="font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;text-decoration:underline;">quem curtiu</span>' : '')+
             (isAdmin() ? '<button data-pin="'+p.id+'" style="border:0;background:transparent;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">'+(p.fixado?'Desafixar':'Fixar')+'</button>' : '')+
+            (isAdmin() ? '<button data-del-mural="'+p.id+'" style="border:0;background:transparent;font-size:11px;font-weight:700;color:var(--danger-text);cursor:pointer;">Excluir</button>' : '')+
             (isAdmin() ? '<span data-who-viewed="'+p.id+'" style="margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;">👁 '+viewCount+' visualizaram</span>' : '')+
           '</div>'+
         '</div>';
@@ -1996,6 +1997,9 @@
     });
     wrap.querySelectorAll('button[data-pin]').forEach(function(btn){
       btn.addEventListener('click', function(){ toggleMuralPin(Number(btn.getAttribute('data-pin'))); });
+    });
+    wrap.querySelectorAll('button[data-del-mural]').forEach(function(btn){
+      btn.addEventListener('click', function(){ deleteMuralPost(Number(btn.getAttribute('data-del-mural'))); });
     });
     wrap.querySelectorAll('[data-who-reacted]').forEach(function(el){
       el.addEventListener('click', function(e){
@@ -2067,6 +2071,28 @@
     } else {
       post.fixado = novoFixado;
       saveLocalList(LS_MURAL_POSTS, state.muralPosts);
+    }
+    renderMural();
+  }
+  async function deleteMuralPost(postId){
+    if(!isAdmin()) return;
+    if(!confirm('Excluir este aviso do mural? Essa ação não pode ser desfeita.')) return;
+    if(state.conn==='online'){
+      try{
+        await sb.from('mural_posts').delete().eq('id', postId);
+        await reloadMuralFromSb();
+        await reloadMuralReactionsFromSb();
+        await reloadMuralViewsFromSb();
+      }catch(err){
+        alert('Não consegui excluir o aviso. Detalhe técnico: '+(err && err.message ? err.message : err));
+      }
+    } else {
+      state.muralPosts = state.muralPosts.filter(function(p){ return p.id!==postId; });
+      state.muralReactions = state.muralReactions.filter(function(r){ return r.postId!==postId; });
+      state.muralViews = state.muralViews.filter(function(v){ return v.postId!==postId; });
+      saveLocalList(LS_MURAL_POSTS, state.muralPosts);
+      saveLocalList(LS_MURAL_REACTIONS, state.muralReactions);
+      saveLocalList(LS_MURAL_VIEWS, state.muralViews);
     }
     renderMural();
   }
