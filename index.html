@@ -2563,9 +2563,8 @@
       if(state.selectedPeople.length>0 && !(t.responsaveis||[]).some(function(u){return state.selectedPeople.indexOf(u)!==-1;})) return false;
       if(state.typeFilter!=='all' && t.tipo!==state.typeFilter) return false;
       if(!state.boardShowAllMonths){
-        var taskMonth = String(t.prazo||'').slice(0,7);
-        var isOverdueOpen = t.status!=='done' && fmtPrazo(t.prazo).days<0;
-        if(taskMonth!==state.boardMonth && !isOverdueOpen) return false;
+        var refDate = (t.status==='done' && t.concluidoEm) ? t.concluidoEm.slice(0,7) : String(t.prazo||'').slice(0,7);
+        if(refDate!==state.boardMonth) return false;
       }
       if(state.search){
         var q = state.search.toLowerCase();
