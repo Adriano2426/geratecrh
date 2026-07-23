@@ -2595,6 +2595,11 @@
     document.getElementById('who-role').textContent = isAdmin() ? 'ADMIN' : 'USUÁRIO';
     document.getElementById('who-name').textContent = state.session.displayName;
 
+    var allForPct = reportableTasks();
+    var doneForPct = allForPct.filter(function(t){return t.status==='done';}).length;
+    var pctGlobal = allForPct.length ? Math.round(doneForPct/allForPct.length*100) : 0;
+    document.getElementById('pct-val').textContent = pctGlobal+'%';
+
     var navInfo = NAV_LABELS[state.mainTab] || NAV_LABELS.overview;
     document.getElementById('nav-switch-icon').textContent = navInfo.icon;
     document.getElementById('nav-switch-label').textContent = navInfo.label;
@@ -2641,10 +2646,6 @@
     }
 
     var visible = visibleTasks();
-    var total = visible.length;
-    var done = visible.filter(function(t){return t.status==='done';}).length;
-    var pct = total ? Math.round(done/total*100) : 0;
-    document.getElementById('pct-val').textContent = pct+'%';
 
     document.querySelectorAll('#type-tabs button').forEach(function(b){
       b.classList.toggle('active', b.getAttribute('data-type')===state.typeFilter);
