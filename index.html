@@ -1578,15 +1578,9 @@
     document.getElementById('f-recorrencia').value = state.draft.recorrencia || 'nenhuma';
     document.getElementById('f-anexo').value = state.draft.anexoUrl || '';
 
-    if(isAdmin()){
-      document.getElementById('f-responsaveis-list').classList.remove('hidden');
-      document.getElementById('f-responsaveis-view').classList.add('hidden');
-      buildPersonPillPicker(fRespList, state.draft.responsaveis, editable);
-    } else {
-      document.getElementById('f-responsaveis-list').classList.add('hidden');
-      document.getElementById('f-responsaveis-view').classList.remove('hidden');
-      renderRespPills(state.draft.responsaveis);
-    }
+    document.getElementById('f-responsaveis-list').classList.remove('hidden');
+    document.getElementById('f-responsaveis-view').classList.add('hidden');
+    buildPersonPillPicker(fRespList, state.draft.responsaveis, editable);
 
     document.getElementById('f-sigiloso-field').classList.toggle('hidden', !isAdmin());
     document.getElementById('f-sigiloso').checked = !!state.draft.sigiloso;
@@ -1686,7 +1680,7 @@
     d.titulo = document.getElementById('f-titulo').value.trim() || 'Sem título';
     d.descricao = document.getElementById('f-descricao').value;
     d.tipo = document.getElementById('f-tipo').value;
-    d.responsaveis = isAdmin() ? readPersonPillPicker(fRespList) : d.responsaveis;
+    d.responsaveis = readPersonPillPicker(fRespList);
     d.prazo = (d.id!=null && !isAdmin()) ? wasPrazo : document.getElementById('f-prazo').value;
     d.status = document.getElementById('f-status').value;
     d.sigiloso = isAdmin() ? document.getElementById('f-sigiloso').checked : (d.sigiloso||false);
