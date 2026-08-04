@@ -898,7 +898,7 @@
     names.forEach(function(n){
       var u = slugify(n);
       var isHelena = u==='helena';
-      users[u] = {username:u, displayName:n, password:hashPassword(u, isHelena?'admin2026':'1234'), role:isHelena?'admin':'user', mustChangePassword:!isHelena};
+      users[u] = {username:u, displayName:n, password:hashPassword(u, isHelena?'admin2026':'1234'), role:isHelena?'admin':'user', mustChangePassword:true};
     });
     return users;
   }
@@ -1967,6 +1967,7 @@
         var reacted = iReacted(p.id);
         var viewCount = muralViewCount(p.id);
         var attach = p.anexoUrl ? attachIcon(p.anexoTipo) : null;
+        var attachHref = safeHref(p.anexoUrl);
         return '<div class="mural-post'+(p.fixado?' pinned':'')+'">'+
           (p.fixado ? '<div style="font-size:10px;font-weight:800;color:var(--brand-green);margin-bottom:3px;">📌 FIXADO</div>' : '')+
           '<div><span class="who">'+escapeHtml(userName(p.autor))+'</span><span class="when">'+fmtWhen(p.criadoEm)+'</span></div>'+
@@ -1974,7 +1975,7 @@
           (attach ? '<div style="display:flex;align-items:center;gap:10px;background:var(--chip-bg);border-radius:10px;padding:9px 11px;margin:8px 0;">'+
             '<span style="width:30px;height:30px;border-radius:8px;background:'+attach.bg+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex:none;">'+attach.label+'</span>'+
             '<span style="font-size:12px;font-weight:700;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escapeHtml(p.anexoNome||'arquivo')+'</span>'+
-            '<a href="'+p.anexoUrl+'" target="_blank" rel="noopener" style="font-size:11px;font-weight:800;color:var(--brand-green);white-space:nowrap;">Abrir ↗</a>'+
+            (attachHref ? '<a href="'+attachHref+'" target="_blank" rel="noopener" style="font-size:11px;font-weight:800;color:var(--brand-green);white-space:nowrap;">Abrir ↗</a>' : '')+
           '</div>' : '')+
           '<div style="display:flex;align-items:center;gap:10px;margin-top:8px;">'+
             '<button data-react="'+p.id+'" style="border:1.5px solid var(--border);background:'+(reacted?'var(--chip-bg)':'var(--card)')+';border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);">👍 '+(count>0?count:'')+'</button>'+
@@ -3024,6 +3025,11 @@
     return String(s==null?'':s).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
+  }
+  function safeHref(url){
+    var s = String(url==null?'':url).trim();
+    if(!/^https?:\/\//i.test(s)) return '';
+    return escapeHtml(s);
   }
 
   // ---------- RELATÓRIO (Excel) ----------
