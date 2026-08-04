@@ -898,7 +898,7 @@
     names.forEach(function(n){
       var u = slugify(n);
       var isHelena = u==='helena';
-      users[u] = {username:u, displayName:n, password:hashPassword(u, isHelena?'admin2026':'1234'), role:isHelena?'admin':'user', mustChangePassword:true};
+      users[u] = {username:u, displayName:n, password:hashPassword(u, isHelena?'admin2026':'1234'), role:isHelena?'admin':'user', mustChangePassword:!isHelena};
     });
     return users;
   }
