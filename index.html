@@ -1051,7 +1051,7 @@
   function mapInfoAccessRow(r){ return {caixaId:r.caixa_id, username:r.username}; }
 
   function reloadUsersFromSb(){
-    return sb.from('usuarios').select('*').then(function(res){
+    return sb.from('usuarios').select('username,display_name,role,must_change_password').then(function(res){
       if(res.error) throw res.error;
       var map = {};
       (res.data||[]).forEach(function(r){ map[r.username] = mapUserRow(r); });
@@ -1188,8 +1188,9 @@
       await reloadTasksFromSb();
       await reloadInfoBoxesFromSb();
       await reloadInfoMsgsFromSb();
-      await reloadVaultBoxesFromSb();
-      await reloadVaultAccessFromSb();
+      try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){
+        state.vaultBoxes = []; state.vaultAccess = [];
+      }
       await reloadMuralFromSb();
       await reloadInfoAccessFromSb();
       await reloadTaskCommentsFromSb();
@@ -1324,20 +1325,37 @@
 
   var pendingUserKey = null;
 
-  loginForm.addEventListener('submit', function(e){
+  loginForm.addEventListener('submit', async function(e){
     e.preventDefault();
     var key = loginUserSel.value;
     var pass = document.getElementById('login-pass').value;
-    var u = state.users[key];
-    if(u && u.password === hashPassword(key, pass)){
+    var localUser = state.users[key];
+    var ok = false, mustChange = false, role = localUser && localUser.role, displayName = localUser && localUser.displayName;
+    if(state.conn==='online'){
+      try{
+        var res = await sb.rpc('login_check', {p_username:key, p_password_hash:hashPassword(key, pass)});
+        if(res.error) throw res.error;
+        var row = (res.data||[])[0];
+        if(row){ ok=true; mustChange=!!row.must_change_password; role=row.role; displayName=row.display_name; }
+      }catch(err){
+        loginErr.textContent = 'Não consegui verificar o login agora. Detalhe técnico: '+(err && err.message ? err.message : err);
+        loginErr.style.display='block';
+        return;
+      }
+    } else {
+      ok = !!(localUser && localUser.password === hashPassword(key, pass));
+      mustChange = !!(localUser && localUser.mustChangePassword);
+    }
+    if(ok){
+      loginErr.textContent = 'Usuário ou senha incorretos.';
       loginErr.style.display='none';
       document.getElementById('login-pass').value='';
-      if(u.mustChangePassword){
+      if(mustChange){
         pendingUserKey = key;
         showForcePw();
         return;
       }
-      state.session = {username:u.username, displayName:u.displayName, role:u.role};
+      state.session = {username:key, displayName:displayName, role:role};
       saveSession(state.session);
       showApp();
     } else {
