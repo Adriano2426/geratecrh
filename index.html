@@ -275,10 +275,11 @@
   .import-row.ok{background:var(--chip-bg);}
   .import-row.err{background:var(--danger-bg);color:var(--danger-text);}
   .import-row .idx{font-weight:800;flex:none;width:20px;}
-  .info-card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:16px;cursor:pointer;box-shadow:0 2px 6px -3px rgba(26,23,38,.1);display:flex;flex-direction:column;gap:8px;}
-  .info-card-title{font-weight:800;font-size:14px;}
-  .info-card-meta{font-size:11.5px;color:var(--muted);font-weight:600;}
-  .info-card-preview{font-size:12.5px;color:var(--ink);line-height:1.4;}
+  .info-card{background:var(--card);border:1px solid var(--border);border-radius:15px;padding:16px;cursor:pointer;box-shadow:0 2px 6px -3px rgba(26,23,38,.1);display:flex;flex-direction:column;gap:8px;min-width:0;overflow:hidden;}
+  .info-card > *{min-width:0;max-width:100%;}
+  .info-card-title{font-weight:800;font-size:14px;overflow-wrap:anywhere;word-break:break-word;}
+  .info-card-meta{font-size:11.5px;color:var(--muted);font-weight:600;overflow-wrap:anywhere;}
+  .info-card-preview{font-size:12.5px;color:var(--ink);line-height:1.4;overflow-wrap:anywhere;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
   .access-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:6px;width:fit-content;}
   .access-geral{background:#e2f4ec;color:#16a070;}
   .access-restrito{background:#fff3e0;color:#d98300;}
@@ -2338,6 +2339,11 @@
     return vaultAccessUsernames(box.id).indexOf(state.session.username) !== -1;
   }
   function canEditVaultBox(box){
+    if(isAdmin()) return true;
+    if(box.criadoPor === state.session.username) return true;
+    return vaultAccessUsernames(box.id).indexOf(state.session.username) !== -1;
+  }
+  function canDeleteVaultBox(box){
     return isAdmin() || box.criadoPor === state.session.username;
   }
   function buildAccessChecklist(containerEl, selectedUsernames){
@@ -2496,7 +2502,7 @@
     document.getElementById('vault-detail-obs').textContent = box.observacoes || '—';
 
     var editable = canEditVaultBox(box);
-    document.getElementById('vault-detail-delete').classList.toggle('hidden', !editable);
+    document.getElementById('vault-detail-delete').classList.toggle('hidden', !canDeleteVaultBox(box));
     document.getElementById('vault-detail-save').classList.toggle('hidden', !editable);
     document.getElementById('vault-edit-zone').classList.toggle('hidden', !editable);
     if(editable){
