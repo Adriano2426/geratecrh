@@ -713,10 +713,12 @@
   <div class="modal">
     <h2 id="vault-detail-title">Caixa</h2>
     <p class="modal-sub" id="vault-detail-meta"></p>
-    <div id="vault-detail-obs-wrap" class="field" style="margin-top:2px"><label>Observações</label><div id="vault-detail-obs" style="font-size:13px;color:var(--muted);line-height:1.5;"></div></div>
+    <div id="vault-detail-obs-wrap" class="field" style="margin-top:2px"><label>Observações</label><div id="vault-detail-obs" style="font-size:13px;color:var(--muted);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;"></div></div>
 
     <div id="vault-edit-zone" class="hidden">
-      <div class="field" style="margin-top:8px"><label>Cor</label><div class="color-picker" id="vault-edit-color-picker"></div></div>
+      <div class="field" style="margin-top:8px"><label>Nome / tema</label><input id="vault-edit-titulo" placeholder="Ex.: Sistemas financeiros, Fornecedores..."></div>
+      <div class="field"><label>Observações</label><textarea id="vault-edit-obs" style="min-height:150px" placeholder="Notas, links, logins..."></textarea></div>
+      <div class="field"><label>Cor</label><div class="color-picker" id="vault-edit-color-picker"></div></div>
       <div class="field"><label>Quem pode ver</label>
         <select id="vault-edit-acesso">
           <option value="geral">Geral (todo o time)</option>
@@ -2502,10 +2504,13 @@
     document.getElementById('vault-detail-obs').textContent = box.observacoes || '—';
 
     var editable = canEditVaultBox(box);
+    document.getElementById('vault-detail-obs-wrap').classList.toggle('hidden', editable);
     document.getElementById('vault-detail-delete').classList.toggle('hidden', !canDeleteVaultBox(box));
     document.getElementById('vault-detail-save').classList.toggle('hidden', !editable);
     document.getElementById('vault-edit-zone').classList.toggle('hidden', !editable);
     if(editable){
+      document.getElementById('vault-edit-titulo').value = box.titulo || '';
+      document.getElementById('vault-edit-obs').value = box.observacoes || '';
       buildColorPicker(document.getElementById('vault-edit-color-picker'), box.cor || VAULT_COLORS[0]);
       document.getElementById('vault-edit-acesso').value = box.acesso;
       var restrito = box.acesso==='restrito';
@@ -2546,19 +2551,29 @@
     if(!box) return;
     var cor = readColorPicker(document.getElementById('vault-edit-color-picker'));
     var acesso = document.getElementById('vault-edit-acesso').value;
+    var novoTitulo = document.getElementById('vault-edit-titulo').value.trim();
+    var novaObs = document.getElementById('vault-edit-obs').value;
+    if(!novoTitulo){ alert('O nome da caixa não pode ficar em branco.'); return; }
     var selected = acesso==='restrito' ? readPersonPillPicker(document.getElementById('vault-edit-access-list')) : [];
 
     if(state.conn==='online'){
       try{
-        await sb.from('cofre_caixas').update({cor:cor, acesso:acesso}).eq('id', boxId);
+        var upd = await sb.from('cofre_caixas').update({titulo:novoTitulo, observacoes:novaObs, cor:cor, acesso:acesso}).eq('id', boxId).select();
+        if(upd.error) throw upd.error;
+        if(!upd.data || upd.data.length===0) throw new Error('Nenhuma linha foi atualizada — verifique as permissões da tabela no Supabase.');
         await sb.from('cofre_acessos').delete().eq('caixa_id', boxId);
         if(acesso==='restrito' && selected.length){
           await sb.from('cofre_acessos').insert(selected.map(function(u){ return {caixa_id:boxId, username:u}; }));
         }
         await reloadVaultBoxesFromSb();
         await reloadVaultAccessFromSb();
-      }catch(err){}
+      }catch(err){
+        alert('Não consegui salvar as alterações. Detalhe técnico: '+(err && err.message ? err.message : err));
+        return;
+      }
     } else {
+      box.titulo = novoTitulo;
+      box.observacoes = novaObs;
       box.cor = cor;
       box.acesso = acesso;
       state.vaultAccess = state.vaultAccess.filter(function(a){ return a.caixaId!==boxId; });
