@@ -1805,7 +1805,7 @@
 
   function renderTeamList(){
     teamList.innerHTML = '';
-    var members = Object.keys(state.users).filter(function(u){return state.users[u].role==='user';})
+    var members = Object.keys(state.users).filter(function(u){return u!==state.session.username;})
       .sort(function(a,b){ return state.users[a].displayName.localeCompare(state.users[b].displayName,'pt'); });
     members.forEach(function(key){
       var u = state.users[key];
@@ -1818,7 +1818,7 @@
         '<input value="'+u.displayName.replace(/"/g,'&quot;')+'" data-role="name" data-key="'+key+'">' +
         badge +
         '<button class="rm" data-key="'+key+'" data-role="reset" title="Gerar senha temporária" style="color:var(--accent)">↻ Redefinir</button>' +
-        '<button class="rm" data-key="'+key+'" data-role="remove" title="Remover pessoa">✕</button>';
+        (u.role==='admin' ? '' : '<button class="rm" data-key="'+key+'" data-role="remove" title="Remover pessoa">✕</button>');
       teamList.appendChild(row);
     });
 
