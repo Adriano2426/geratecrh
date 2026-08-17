@@ -1119,13 +1119,15 @@
     });
   }
   function reloadVaultBoxesFromSb(){
-    return sb.from('cofre_caixas').select('*').then(function(res){
+    var uname = (state.session && state.session.username) || '';
+    return sb.rpc('get_vault_boxes', {p_username: uname}).then(function(res){
       if(res.error) throw res.error;
       state.vaultBoxes = (res.data||[]).map(mapVaultBoxRow);
     });
   }
   function reloadVaultAccessFromSb(){
-    return sb.from('cofre_acessos').select('*').then(function(res){
+    var uname = (state.session && state.session.username) || '';
+    return sb.rpc('get_vault_access', {p_username: uname}).then(function(res){
       if(res.error) throw res.error;
       state.vaultAccess = (res.data||[]).map(mapVaultAccessRow);
     });
@@ -1261,46 +1263,45 @@
 
   // ---------- FRASE MOTIVACIONAL ----------
   var QUOTES = [
-    {texto:'Conhece-te a ti mesmo.', autor:'Sócrates'},
-    {texto:'Só sei que nada sei.', autor:'Sócrates'},
-    {texto:'A vida não examinada não vale a pena ser vivida.', autor:'Sócrates'},
-    {texto:'Somos aquilo que fazemos repetidamente. Excelência não é um ato, é um hábito.', autor:'Aristóteles'},
-    {texto:'Educar a mente sem educar o coração não é educação.', autor:'Aristóteles'},
-    {texto:'O caminho de mil léguas começa com o primeiro passo.', autor:'Lao-Tsé'},
-    {texto:'Escolhe um trabalho que ames e não terás que trabalhar nem um dia da tua vida.', autor:'Confúcio'},
-    {texto:'Não é o homem que dá valor às coisas, mas o valor que ele dá que revela o homem.', autor:'Confúcio'},
-    {texto:'A raiz do sofrimento é o apego.', autor:'Buda'},
-    {texto:'Tua vida é o que teus pensamentos fazem dela.', autor:'Marco Aurélio'},
-    {texto:'Não é porque as coisas são difíceis que não ousamos, é porque não ousamos que elas são difíceis.', autor:'Sêneca'},
-    {texto:'Não são as coisas que nos perturbam, mas a opinião que temos delas.', autor:'Epicteto'},
-    {texto:'Ninguém entra duas vezes no mesmo rio.', autor:'Heráclito'},
-    {texto:'Tudo vale a pena se a alma não é pequena.', autor:'Fernando Pessoa'},
-    {texto:'Ao vencedor, as batatas.', autor:'Machado de Assis'},
+    // ---- Bíblia Sagrada ----
+    {texto:'Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.', autor:'Eclesiastes 3:1'},
+    {texto:'Amai-vos uns aos outros, assim como eu vos amei.', autor:'João 13:34'},
+    {texto:'Tudo posso naquele que me fortalece.', autor:'Filipenses 4:13'},
+    {texto:'O Senhor é o meu pastor; nada me faltará.', autor:'Salmos 23:1'},
+    {texto:'Porque para Deus nada é impossível.', autor:'Lucas 1:37'},
+    {texto:'Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.', autor:'Provérbios 3:5'},
+    {texto:'Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus.', autor:'Isaías 41:10'},
+    {texto:'O Senhor é a minha luz e a minha salvação; a quem temerei?', autor:'Salmos 27:1'},
+    {texto:'Ora, a fé é o firme fundamento das coisas que se esperam, e a prova das coisas que se não veem.', autor:'Hebreus 11:1'},
+    {texto:'Bem-aventurados os pobres de espírito, porque deles é o reino dos céus.', autor:'Mateus 5:3'},
+    {texto:'Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas essas coisas vos serão acrescentadas.', autor:'Mateus 6:33'},
+    {texto:'Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.', autor:'Eclesiastes 9:10'},
+    {texto:'Não vos conformeis com este século, mas transformai-vos pela renovação do vosso entendimento.', autor:'Romanos 12:2'},
+    {texto:'O temor do Senhor é o princípio da sabedoria.', autor:'Provérbios 9:10'},
+    {texto:'Regozijai-vos sempre no Senhor; outra vez digo, regozijai-vos.', autor:'Filipenses 4:4'},
+    {texto:'Esforça-te, e tem bom ânimo; não temas, porque o Senhor teu Deus é o que vai contigo.', autor:'Deuteronômio 31:6'},
+    {texto:'Lâmpada para os meus pés é tua palavra, e luz para o meu caminho.', autor:'Salmos 119:105'},
+    {texto:'E conhecereis a verdade, e a verdade vos libertará.', autor:'João 8:32'},
+    {texto:'Tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.', autor:'Colossenses 3:23'},
+    {texto:'Porque eu bem sei os pensamentos que penso a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal.', autor:'Jeremias 29:11'},
+    // ---- Pensadores e escritores brasileiros ----
     {texto:'Feliz aquele que transfere o que sabe e aprende o que ensina.', autor:'Cora Coralina'},
-    {texto:'Tudo tem o seu tempo determinado.', autor:'Eclesiastes 3:1, Bíblia'},
-    {texto:'Amai-vos uns aos outros.', autor:'João 13:34, Bíblia'},
-    {texto:'Com a dificuldade, certamente vem o alívio.', autor:'Alcorão 94:6'},
-    {texto:'Tens direito à ação, mas não aos frutos da ação.', autor:'Bhagavad Gita'},
-    {texto:'A persistência é o caminho do êxito.', autor:'Provérbio chinês'},
-    {texto:'Quem planta bondade colhe amizade.', autor:'Provérbio popular'},
-    {texto:'A imaginação é mais importante que o conhecimento.', autor:'Albert Einstein'},
-    {texto:'Seja a mudança que você quer ver no mundo.', autor:'Mahatma Gandhi'},
-    {texto:'Tudo parece impossível até que seja feito.', autor:'Nelson Mandela'},
-    {texto:'Eu tenho um sonho.', autor:'Martin Luther King Jr.'},
-    {texto:'Que a Força esteja com você.', autor:'Star Wars'},
-    {texto:'Amanhã é outro dia.', autor:'E o Vento Levou'},
-    {texto:'A vida é como uma caixa de chocolates: nunca se sabe o que vai encontrar.', autor:'Forrest Gump'},
-    {texto:'Não é o tamanho do cão na luta, é o tamanho da luta no cão.', autor:'Mark Twain'},
-    {texto:'A coragem é a primeira das qualidades humanas porque garante todas as outras.', autor:'Aristóteles'},
-    {texto:'Onde há amor, há vida.', autor:'Mahatma Gandhi'},
-    {texto:'Navegar é preciso, viver não é preciso.', autor:'Fernando Pessoa'},
-    {texto:'A dúvida é o princípio da sabedoria.', autor:'Aristóteles'},
-    {texto:'O que não te desafia não te transforma.', autor:'Provérbio popular'},
-    {texto:'Nada do que foi será de novo do jeito que já foi um dia.', autor:'Renato Russo'},
-    {texto:'A esperança é a última que morre.', autor:'Provérbio popular'},
-    {texto:'Faz o que podes, com o que tens, onde estás.', autor:'Theodore Roosevelt'},
-    {texto:'A queda não é fracasso, o fracasso é ficar onde caiu.', autor:'Provérbio africano'},
-    {texto:'Todo mundo é um gênio, mas se você julgar um peixe pela sua capacidade de subir em uma árvore, ele viverá a vida inteira acreditando que é estúpido.', autor:'atribuído a Albert Einstein'},
+    {texto:'No meio do caminho tinha uma pedra, tinha uma pedra no meio do caminho.', autor:'Carlos Drummond de Andrade'},
+    {texto:'A justiça atrasada não é justiça, senão injustiça qualificada e manifesta.', autor:'Rui Barbosa'},
+    {texto:'Viver é muito perigoso.', autor:'Guimarães Rosa'},
+    {texto:'Que ninguém se engane, só se consegue a simplicidade através de muito trabalho.', autor:'Clarice Lispector'},
+    {texto:'Ao vencedor, as batatas.', autor:'Machado de Assis'},
+    // ---- Teólogos e pensadores cristãos (Reformados, Pentecostais e Carismáticos) ----
+    {texto:'Fizeste-nos para Ti, e o nosso coração está inquieto enquanto não repousa em Ti.', autor:'Agostinho de Hipona'},
+    {texto:'Nossa sabedoria consiste quase inteiramente de duas partes: o conhecimento de Deus e o conhecimento de nós mesmos.', autor:'João Calvino'},
+    {texto:'Aqui estou, não posso fazer de outra forma. Que Deus me ajude.', autor:'Martinho Lutero'},
+    {texto:'Ore como se tudo dependesse de Deus, e trabalhe como se tudo dependesse de você.', autor:'Charles Spurgeon'},
+    {texto:'Resolvo viver com toda a minha força, enquanto eu viver.', autor:'Jonathan Edwards'},
+    {texto:'Pegue fogo com santidade e o mundo virá para ver você queimar.', autor:'John Wesley'},
+    {texto:'O que vem à nossa mente quando pensamos em Deus é a coisa mais importante sobre nós.', autor:'A. W. Tozer'},
+    {texto:'Deus não pode usar grandemente um homem até que o tenha ferido profundamente.', autor:'Smith Wigglesworth'},
+    {texto:'Deus é mais glorificado em nós quando estamos mais satisfeitos nEle.', autor:'John Piper'},
+    {texto:'Coragem é contagiante. Quando um homem corajoso toma uma posição, a espinha dorsal dos outros se enrijece.', autor:'Billy Graham'},
   ];
   function showRandomQuote(){
     var box = document.getElementById('quote-box');
@@ -1360,6 +1361,7 @@
       }
       state.session = {username:key, displayName:displayName, role:role};
       saveSession(state.session);
+      if(state.conn==='online'){ try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){} }
       showApp();
     } else {
       loginErr.style.display='block';
@@ -1397,6 +1399,7 @@
     }
     state.session = {username:u.username, displayName:u.displayName, role:u.role};
     saveSession(state.session);
+    if(state.conn==='online'){ try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){} }
     document.getElementById('forcepw-screen').classList.add('hidden');
     pendingUserKey = null;
     showApp();
@@ -1646,7 +1649,7 @@
       }).join('');
       showPopoverNear(this, 'HISTÓRICO DA TAREFA', itemsHtml || '<div class="fp-item" style="cursor:default;color:var(--muted);">Nenhum histórico registrado ainda.</div>');
     }catch(err){
-      alert('Não consegui buscar o histórico. Detalhe técnico: '+(err && err.message ? err.message : err));
+      showToast('Não consegui buscar o histórico. Detalhe técnico: '+(err && err.message ? err.message : err));
     }
   });
 
@@ -1674,7 +1677,7 @@
         if(res.error) throw res.error;
         await reloadTaskCommentsFromSb();
       }catch(err){
-        alert('Não consegui enviar o comentário. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui enviar o comentário. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
       var nid = state.taskComments.reduce(function(m,x){return Math.max(m,x.id);},0)+1;
@@ -1753,7 +1756,7 @@
         }
         await reloadTasksFromSb();
       }catch(err){
-        alert('Não consegui salvar a tarefa. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui salvar a tarefa. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
       render();
       return;
@@ -2100,7 +2103,7 @@
         await reloadMuralReactionsFromSb();
         await reloadMuralViewsFromSb();
       }catch(err){
-        alert('Não consegui excluir o aviso. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui excluir o aviso. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
       state.muralPosts = state.muralPosts.filter(function(p){ return p.id!==postId; });
@@ -2138,7 +2141,7 @@
         if(res.error) throw res.error;
         await reloadMuralFromSb();
       }catch(err){
-        alert('Não consegui publicar o aviso. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui publicar o aviso. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
       if(muralPendingFile){ alert('Anexar arquivo só funciona com o site conectado ao Supabase (modo local não tem onde guardar o arquivo).'); return; }
@@ -2235,7 +2238,7 @@
         await reloadInfoBoxesFromSb();
         await reloadInfoAccessFromSb();
       }catch(err){
-        alert('Não consegui criar a caixa. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui criar a caixa. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
       var nid = state.infoBoxes.reduce(function(m,b){return Math.max(m,b.id);},0)+1;
@@ -2289,7 +2292,7 @@
         if(res.error) throw res.error;
         await reloadInfoMsgsFromSb();
       }catch(err){
-        alert('Não consegui enviar a mensagem. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui enviar a mensagem. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
       var nid = state.infoMsgs.reduce(function(m,x){return Math.max(m,x.id);},0)+1;
@@ -2471,16 +2474,12 @@
 
     if(state.conn==='online'){
       try{
-        var ins = await sb.from('cofre_caixas').insert({titulo:titulo, cor:cor, observacoes:obs, criado_por:criadoPor, acesso:acesso}).select();
+        var ins = await sb.rpc('create_vault_box', {p_titulo:titulo, p_cor:cor, p_observacoes:obs, p_criado_por:criadoPor, p_acesso:acesso, p_selected_usernames: acesso==='restrito' ? selected : []});
         if(ins.error) throw ins.error;
-        var newId = ins.data && ins.data[0] && ins.data[0].id;
-        if(newId!=null && acesso==='restrito' && selected.length){
-          await sb.from('cofre_acessos').insert(selected.map(function(u){ return {caixa_id:newId, username:u}; }));
-        }
         await reloadVaultBoxesFromSb();
         await reloadVaultAccessFromSb();
       }catch(err){
-        alert('Não consegui criar a caixa. Detalhe técnico: '+(err && err.message ? err.message : err)+'\n\nSe a mensagem falar em coluna "cor", rode o script de migração mais recente no Supabase.');
+        showToast('Não consegui criar a caixa. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em função "create_vault_box", rode o script supabase_vault_rpc.sql no Supabase.');
       }
     } else {
       var nid = state.vaultBoxes.reduce(function(m,b){return Math.max(m,b.id);},0)+1;
@@ -2558,17 +2557,12 @@
 
     if(state.conn==='online'){
       try{
-        var upd = await sb.from('cofre_caixas').update({titulo:novoTitulo, observacoes:novaObs, cor:cor, acesso:acesso}).eq('id', boxId).select();
+        var upd = await sb.rpc('update_vault_box', {p_id:boxId, p_titulo:novoTitulo, p_cor:cor, p_observacoes:novaObs, p_acesso:acesso, p_selected_usernames: acesso==='restrito' ? selected : []});
         if(upd.error) throw upd.error;
-        if(!upd.data || upd.data.length===0) throw new Error('Nenhuma linha foi atualizada — verifique as permissões da tabela no Supabase.');
-        await sb.from('cofre_acessos').delete().eq('caixa_id', boxId);
-        if(acesso==='restrito' && selected.length){
-          await sb.from('cofre_acessos').insert(selected.map(function(u){ return {caixa_id:boxId, username:u}; }));
-        }
         await reloadVaultBoxesFromSb();
         await reloadVaultAccessFromSb();
       }catch(err){
-        alert('Não consegui salvar as alterações. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui salvar as alterações. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em função "update_vault_box", rode o script supabase_vault_rpc.sql no Supabase.');
         return;
       }
     } else {
@@ -3070,6 +3064,24 @@
     if(!/^https?:\/\//i.test(s)) return '';
     return escapeHtml(s);
   }
+  function showToast(msg){
+    var host = document.getElementById('toast-host');
+    if(!host){
+      host = document.createElement('div');
+      host.id = 'toast-host';
+      host.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;';
+      document.body.appendChild(host);
+    }
+    var el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = 'background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:700;box-shadow:0 6px 20px -6px var(--shadow-card);max-width:420px;text-align:center;pointer-events:auto;';
+    host.appendChild(el);
+    setTimeout(function(){
+      el.style.transition='opacity .3s';
+      el.style.opacity='0';
+      setTimeout(function(){ el.remove(); }, 300);
+    }, 6000);
+  }
 
   // ---------- RELATÓRIO (Excel) ----------
   function statusLabel(s){ return s==='todo'?'Não iniciado':s==='doing'?'Em andamento':'Concluído'; }
@@ -3322,7 +3334,7 @@
         if(rows.length===0){ alert('Não encontrei nenhuma linha de dados nesse arquivo.'); return; }
         renderImportPreview(rows);
       }catch(err){
-        alert('Não consegui ler esse arquivo. Confira se é um .xlsx/.xls/.csv válido. Detalhe: '+(err&&err.message?err.message:err));
+        showToast('Não consegui ler esse arquivo. Confira se é um .xlsx/.xls/.csv válido. Detalhe: '+(err&&err.message?err.message:err));
       }
     };
     reader.readAsArrayBuffer(file);
@@ -3411,7 +3423,7 @@
         }
         await reloadTasksFromSb();
       }catch(err){
-        alert('Não consegui importar tudo. Detalhe técnico: '+(err && err.message ? err.message : err));
+        showToast('Não consegui importar tudo. Detalhe técnico: '+(err && err.message ? err.message : err));
       }
     } else {
       var maxId = state.tasks.reduce(function(m,t){return Math.max(m, typeof t.id==='number'?t.id:0);},0);
