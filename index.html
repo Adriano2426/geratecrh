@@ -145,8 +145,9 @@
   .overdue-note{font-size:12px;font-weight:700;color:#c4314b;}
 
   main{flex:1;padding:16px 32px 40px;}
-  .kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
-  @media (max-width:900px){.kanban{grid-template-columns:1fr;} .chips-grid{grid-template-columns:repeat(2,1fr);}}
+  .kanban{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;align-items:start;}
+  @media (max-width:640px){.kanban{grid-template-columns:1fr;}}
+  @media (max-width:900px){.chips-grid{grid-template-columns:repeat(2,1fr);}}
   .mobile-col-switch{display:none;}
   @media (max-width:640px){
     header{padding:14px 16px;gap:10px;flex-wrap:wrap;}
