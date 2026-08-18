@@ -23,6 +23,12 @@
     --st-todo:#8b86a0; --st-doing:#2c6e9e; --st-aguardando:#b9791c; --st-done:#16a070;
     --pr-baixa:#7c8b99; --pr-urgente:#c4314b;
     --wip-over-bg:#fdecef; --wip-over-text:#c4314b;
+    /* barra lateral — tabs coloridas */
+    --nav-overview-ink:#6d4fc7; --nav-overview-bg:#ede7fb;
+    --nav-board-ink:#12915f; --nav-board-bg:#dff2e9;
+    --nav-calendar-ink:#b9791c; --nav-calendar-bg:#fbebd2;
+    --nav-info-ink:#b23a63; --nav-info-bg:#fbe3ea;
+    --nav-vault-ink:#a23b3b; --nav-vault-bg:#f6dcdc;
   }
   html[data-theme="dark"]{
     --bg:#14151a; --card:#1e1f26; --accent:#f2f2f2; --accent2:#c7c7c7; --on-accent:#14151a;
@@ -35,6 +41,11 @@
     --st-todo:#9a94b3; --st-doing:#7fb2da; --st-aguardando:#e0ac55; --st-done:#3fd6a0;
     --pr-baixa:#9bb0c2; --pr-urgente:#ff8a9c;
     --wip-over-bg:#3a2228; --wip-over-text:#ff8a9c;
+    --nav-overview-ink:#c3aef5; --nav-overview-bg:#2a2440;
+    --nav-board-ink:#4fd69b; --nav-board-bg:#1c2e23;
+    --nav-calendar-ink:#e0ac55; --nav-calendar-bg:#392c17;
+    --nav-info-ink:#e4a2ac; --nav-info-bg:#3a2229;
+    --nav-vault-ink:#e58579; --nav-vault-bg:#3a211d;
   }
   html, body{background:var(--bg);}
   body{transition:background-color .2s ease, color .2s ease;}
@@ -189,8 +200,8 @@
   .col-collapsed-note{font-size:11.5px;font-weight:700;color:var(--muted);padding:4px 6px 2px;cursor:pointer;text-decoration:underline;}
   .col-title{font-weight:800;font-size:13.5px;}
   .col-count{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--muted);background:var(--card);padding:2px 9px;border-radius:20px;}
-  .col-body{display:flex;flex-direction:column;gap:10px;min-height:60px;max-height:680px;overflow-y:auto;padding-right:4px;}
-  .col-empty{font-size:12px;color:var(--muted);text-align:center;padding:24px 0;font-weight:600;}
+  .col-body{display:flex;flex-direction:column;gap:10px;height:680px;overflow-y:auto;padding-right:4px;}
+  .col-empty{font-size:12px;color:var(--muted);text-align:center;font-weight:600;flex:1;display:flex;align-items:center;justify-content:center;}
   .card{background:var(--card);border:1px solid var(--border);border-left:4px solid transparent;border-radius:13px;padding:14px;cursor:pointer;box-shadow:0 2px 6px -3px rgba(26,23,38,.12);transition:transform .12s ease, box-shadow .12s ease;}
   .card.overdue{background:var(--danger-bg);border-color:var(--danger-border);box-shadow:0 3px 10px -4px rgba(196,49,75,.35);}
   .card.dragging{opacity:.55;transform:rotate(1.5deg) scale(1.02);box-shadow:0 14px 30px -10px rgba(26,23,38,.35);}
@@ -263,11 +274,21 @@
   .nav-switch-wrap{display:none;}
 
   .app-body{display:flex;align-items:flex-start;}
-  .side-rail{width:210px;flex:none;background:var(--card);border-right:1px solid var(--border);min-height:calc(100vh - 78px);padding:18px 12px;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;align-self:flex-start;}
-  .side-rail .sr-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;white-space:nowrap;}
+  .side-rail{width:172px;flex:none;background:var(--card);border-right:1px solid var(--border);min-height:calc(100vh - 78px);padding:18px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:0;align-self:flex-start;}
+  .side-rail .sr-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;font-weight:700;font-size:12.5px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background-color .12s ease,color .12s ease;}
   .side-rail .sr-item:hover{background:var(--border2);}
-  .side-rail .sr-item.active{background:var(--chip-bg);color:var(--brand-green);}
-  .side-rail .sr-icon{font-size:15px;flex:none;width:18px;text-align:center;}
+  .side-rail .sr-icon{font-size:13px;flex:none;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--chip-bg);transition:transform .12s ease;}
+  .side-rail .sr-item[data-tab="overview"] .sr-icon{background:var(--nav-overview-bg);}
+  .side-rail .sr-item[data-tab="board"] .sr-icon{background:var(--nav-board-bg);}
+  .side-rail .sr-item[data-tab="calendar"] .sr-icon{background:var(--nav-calendar-bg);}
+  .side-rail .sr-item[data-tab="info"] .sr-icon{background:var(--nav-info-bg);}
+  .side-rail .sr-item[data-tab="vault"] .sr-icon{background:var(--nav-vault-bg);}
+  .side-rail .sr-item.active .sr-icon{transform:scale(1.08);}
+  .side-rail .sr-item[data-tab="overview"].active{background:var(--nav-overview-bg);color:var(--nav-overview-ink);}
+  .side-rail .sr-item[data-tab="board"].active{background:var(--nav-board-bg);color:var(--nav-board-ink);}
+  .side-rail .sr-item[data-tab="calendar"].active{background:var(--nav-calendar-bg);color:var(--nav-calendar-ink);}
+  .side-rail .sr-item[data-tab="info"].active{background:var(--nav-info-bg);color:var(--nav-info-ink);}
+  .side-rail .sr-item[data-tab="vault"].active{background:var(--nav-vault-bg);color:var(--nav-vault-ink);}
   .app-main{flex:1;min-width:0;}
   @media (max-width:880px){
     .side-rail{width:60px;padding:14px 6px;}
@@ -400,7 +421,6 @@
       </div>
       <button type="submit" class="login-btn">Entrar</button>
     </form>
-    <div class="login-hint">Cada pessoa só vê e cria as próprias tarefas.<br>O administrador vê e atribui tarefas para todos.</div>
     <div class="login-conn"><span class="conn-dot" id="login-conn-dot"></span><span id="login-conn-text">Modo local (sem sincronização)</span></div>
   </div>
 </div>
