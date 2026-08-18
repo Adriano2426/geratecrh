@@ -203,6 +203,28 @@
   .card-foot{display:flex;align-items:center;gap:7px;}
   .foot-av{width:19px;height:19px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex:none;}
   .foot-name{font-size:11.5px;font-weight:700;}
+  .card-checklist-mini{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .card-checklist-mini .progress-track{flex:1;}
+  .card-checklist-mini span{font-size:10.5px;font-weight:700;color:var(--muted);}
+
+  .progress-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--brand-green);border-radius:3px;transition:width .2s ease;}
+  .checklist-list{display:flex;flex-direction:column;gap:6px;}
+  .checklist-item{display:flex;align-items:center;gap:9px;}
+  .checklist-item .txt{flex:1;font-size:13px;}
+  .checklist-item.done .txt{color:var(--muted);text-decoration:line-through;}
+  .check-box{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border2);background:var(--card);flex:none;cursor:pointer;padding:0;}
+  .checklist-item.done .check-box{background:var(--brand-green);border-color:var(--brand-green);}
+  .check-remove{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;flex:none;padding:2px 4px;}
+  .check-remove:hover{color:var(--danger-text);}
+
+  .anexos-list{display:flex;flex-direction:column;gap:6px;}
+  .anexo-item{display:flex;align-items:center;gap:8px;background:var(--chip-bg);border-radius:8px;padding:7px 10px;}
+  .anexo-icon{font-size:13px;flex:none;}
+  .anexo-nome{flex:1;font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  a.anexo-nome:hover{text-decoration:underline;}
+  .anexo-remove{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;flex:none;}
+  .anexo-remove:hover{color:var(--danger-text);}
 
   .list-section{margin-bottom:22px;}
   .list-section-head{display:flex;align-items:center;gap:8px;padding:2px 4px 10px;}
@@ -627,6 +649,10 @@
         <div id="f-responsaveis-view" class="resp-pills"></div>
         <div class="chips-grid" id="f-responsaveis-list" style="grid-template-columns:1fr;max-height:220px;overflow:auto;padding-right:2px;"></div>
       </div>
+      <div class="field hidden" id="f-papel-field">
+        <label>Responsável principal</label>
+        <select id="f-papel-principal"></select>
+      </div>
       <div class="field"><label>Prazo</label><input type="date" id="f-prazo" required>
         <div id="f-prazo-lock-note" class="hidden" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;">🔒 Só o admin pode alterar o prazo depois que a tarefa já foi criada.</div>
       </div>
@@ -639,7 +665,35 @@
       <div class="field"><label>Repetir</label>
         <select id="f-recorrencia"><option value="nenhuma">Não repetir</option><option value="semanal">Toda semana (ao concluir)</option><option value="mensal">Todo mês (ao concluir)</option></select>
       </div>
-      <div class="field"><label>Link de anexo (opcional)</label><input id="f-anexo" placeholder="https://..."></div>
+      <div class="field" id="f-checklist-field">
+        <label>Checklist</label>
+        <div id="f-checklist-progress-wrap" class="hidden" style="margin-bottom:8px;">
+          <div class="progress-track"><div id="f-checklist-progress-fill" class="progress-fill" style="width:0%;"></div></div>
+        </div>
+        <div id="f-checklist-list" class="checklist-list"></div>
+        <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <select id="f-checklist-template" style="max-width:170px;flex:none;">
+            <option value="">Modelo rápido...</option>
+            <option value="admissao">Admissão</option>
+            <option value="desligamento">Desligamento</option>
+            <option value="treinamento">Treinamento</option>
+            <option value="beneficios">Benefícios</option>
+            <option value="folha">Fechamento de folha</option>
+          </select>
+          <input id="f-checklist-input" placeholder="Novo item do checklist..." style="flex:1;min-width:140px;">
+          <button type="button" class="team-btn" id="f-checklist-add">+ Item</button>
+        </div>
+      </div>
+      <div class="field" id="f-anexos-field">
+        <label>Anexos</label>
+        <div id="f-anexos-list" class="anexos-list"></div>
+        <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap;">
+          <input id="f-anexo-url-input" placeholder="Colar link (https://...)" style="flex:1;min-width:140px;">
+          <button type="button" class="team-btn" id="f-anexo-add-link">+ Link</button>
+          <button type="button" class="team-btn" id="f-anexo-upload-btn">📎 Arquivo</button>
+          <input type="file" id="f-anexo-file-input" accept=".pdf,.png,.jpg,.jpeg" style="display:none;">
+        </div>
+      </div>
       <div class="field hidden" id="f-sigiloso-field">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <input type="checkbox" id="f-sigiloso" style="width:auto;">
@@ -858,6 +912,8 @@
   var LS_MURAL_POSTS = 'trh_mural_posts_v1';
   var LS_INFO_ACCESS = 'trh_info_access_v1';
   var LS_TASK_COMMENTS = 'trh_task_comments_v1';
+  var LS_TASK_CHECKLIST = 'trh_task_checklist_v1';
+  var LS_TASK_ANEXOS = 'trh_task_anexos_v1';
   var LS_READ_MARKS = 'trh_read_marks_v1';
   var LS_MURAL_PINS = 'trh_mural_pins_v1';
   var LS_MURAL_REACTIONS = 'trh_mural_reactions_v1';
@@ -1055,6 +1111,8 @@
     users: {},
     tasks: [],
     taskComments: [],
+    taskChecklist: [],
+    taskAnexos: [],
     session: loadSession(),
     selectedPeople: [],
     typeFilter: 'all',
@@ -1106,6 +1164,8 @@
   function mapUserRow(r){ return {username:r.username, displayName:r.display_name, password:r.password, role:r.role, mustChangePassword: !!r.must_change_password}; }
   function mapTaskRow(r){ return {id:r.id, titulo:r.titulo, descricao:r.descricao||'', tipo:r.tipo||'atividade', prazo:r.prazo, status:r.status||'todo', sigiloso: !!r.sigiloso, responsaveis: [], prioridade:r.prioridade||'normal', recorrencia:r.recorrencia||'nenhuma', anexoUrl:r.anexo_url||'', concluidoEm:r.concluido_em||null}; }
   function mapTaskCommentRow(r){ return {id:r.id, tarefaId:r.tarefa_id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em}; }
+  function mapTaskChecklistRow(r){ return {id:r.id, tarefaId:r.tarefa_id, texto:r.texto, concluido:!!r.concluido, ordem:r.ordem||0}; }
+  function mapTaskAnexoRow(r){ return {id:r.id, tarefaId:r.tarefa_id, nome:r.nome, url:r.url, tipo:r.tipo, criadoPor:r.criado_por}; }
   function mapInfoBoxRow(r){ return {id:r.id, titulo:r.titulo, criadoPor:r.criado_por, criadoEm:r.criado_em, acesso:r.acesso||'geral'}; }
   function mapInfoMsgRow(r){ return {id:r.id, caixaId:r.caixa_id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em}; }
   function mapVaultBoxRow(r){ return {id:r.id, titulo:r.titulo, cor:r.cor||'#111111', observacoes:r.observacoes||'', criadoPor:r.criado_por, acesso:r.acesso||'geral', criadoEm:r.criado_em}; }
@@ -1129,11 +1189,12 @@
       var tasks = (res.data||[]).map(mapTaskRow);
       return sb.from('tarefas_responsaveis').select('*').then(function(res2){
         if(res2.error) throw res2.error;
-        var byTask = {};
+        var byTask = {}, papelByTask = {};
         (res2.data||[]).forEach(function(row){
           (byTask[row.tarefa_id] = byTask[row.tarefa_id] || []).push(row.username);
+          (papelByTask[row.tarefa_id] = papelByTask[row.tarefa_id] || {})[row.username] = row.papel || 'apoio';
         });
-        tasks.forEach(function(t){ t.responsaveis = byTask[t.id] || []; });
+        tasks.forEach(function(t){ t.responsaveis = byTask[t.id] || []; t.papelResp = papelByTask[t.id] || {}; });
         state.tasks = tasks;
       });
     });
@@ -1154,6 +1215,18 @@
     return sb.from('tarefas_comentarios').select('*').then(function(res){
       if(res.error) throw res.error;
       state.taskComments = (res.data||[]).map(mapTaskCommentRow);
+    });
+  }
+  function reloadTaskChecklistFromSb(){
+    return sb.from('tarefas_checklist').select('*').then(function(res){
+      if(res.error) throw res.error;
+      state.taskChecklist = (res.data||[]).map(mapTaskChecklistRow);
+    });
+  }
+  function reloadTaskAnexosFromSb(){
+    return sb.from('tarefas_anexos').select('*').then(function(res){
+      if(res.error) throw res.error;
+      state.taskAnexos = (res.data||[]).map(mapTaskAnexoRow);
     });
   }
   function reloadMuralReactionsFromSb(){
@@ -1234,7 +1307,13 @@
     var ch12 = sb.channel('trh_mural_visualizacoes').on('postgres_changes',{event:'*',schema:'public',table:'mural_visualizacoes'}, function(){
       reloadMuralViewsFromSb().then(refreshUi);
     }).subscribe();
-    channels = [ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12];
+    var ch13 = sb.channel('trh_tarefas_checklist').on('postgres_changes',{event:'*',schema:'public',table:'tarefas_checklist'}, function(){
+      reloadTaskChecklistFromSb().then(refreshUi);
+    }).subscribe();
+    var ch14 = sb.channel('trh_tarefas_anexos').on('postgres_changes',{event:'*',schema:'public',table:'tarefas_anexos'}, function(){
+      reloadTaskAnexosFromSb().then(refreshUi);
+    }).subscribe();
+    channels = [ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12, ch13, ch14];
   }
 
   function refreshUi(){
@@ -1261,6 +1340,9 @@
       await reloadMuralFromSb();
       await reloadInfoAccessFromSb();
       await reloadTaskCommentsFromSb();
+      try{ await reloadTaskChecklistFromSb(); await reloadTaskAnexosFromSb(); }catch(f2Err){
+        state.taskChecklist = []; state.taskAnexos = [];
+      }
       await reloadMuralReactionsFromSb();
       await reloadMuralViewsFromSb();
       subscribeRealtime();
@@ -1289,6 +1371,8 @@
     state.muralPosts = loadLocalList(LS_MURAL_POSTS);
     state.infoBoxAccess = loadLocalList(LS_INFO_ACCESS);
     state.taskComments = loadLocalList(LS_TASK_COMMENTS);
+    state.taskChecklist = loadLocalList(LS_TASK_CHECKLIST);
+    state.taskAnexos = loadLocalList(LS_TASK_ANEXOS);
     state.muralReactions = loadLocalList(LS_MURAL_REACTIONS);
     state.muralViews = loadLocalList(LS_MURAL_VIEWS);
     updateConnIndicators();
@@ -1661,12 +1745,25 @@
     }).join('');
   }
 
+  function refreshPapelSelect(){
+    var selected = readPersonPillPicker(fRespList);
+    var sel = document.getElementById('f-papel-principal');
+    var prevVal = sel.value;
+    sel.innerHTML = selected.map(function(u){ return '<option value="'+u+'">'+escapeHtml(userName(u))+'</option>'; }).join('');
+    var draftPrincipal = state.draft && state.draft.papelPrincipal;
+    var keep = selected.indexOf(prevVal)!==-1 ? prevVal : (draftPrincipal && selected.indexOf(draftPrincipal)!==-1 ? draftPrincipal : selected[0]);
+    if(keep) sel.value = keep;
+    document.getElementById('f-papel-field').classList.toggle('hidden', selected.length<2);
+  }
+  fRespList.addEventListener('click', function(){ refreshPapelSelect(); });
+
   function openTaskModal(task){
     var isNew = !task;
-    state.draft = task ? Object.assign({}, task, {responsaveis:(task.responsaveis||[]).slice()}) : {
+    var papelPrincipal = task && task.papelResp ? Object.keys(task.papelResp).find(function(u){ return task.papelResp[u]==='principal'; }) : null;
+    state.draft = task ? Object.assign({}, task, {responsaveis:(task.responsaveis||[]).slice(), papelPrincipal:papelPrincipal||null}) : {
       id:null, titulo:'', descricao:'', tipo:'atividade',
       responsaveis: isAdmin() ? [] : [state.session.username],
-      prazo:'2026-07-01', status:'todo', sigiloso:false, prioridade:'normal', recorrencia:'nenhuma', anexoUrl:''
+      prazo:'2026-07-01', status:'todo', sigiloso:false, prioridade:'normal', recorrencia:'nenhuma', anexoUrl:'', papelPrincipal:null
     };
     var editable = isNew || canEditTask(task);
 
@@ -1679,18 +1776,19 @@
     document.getElementById('f-status').value = state.draft.status;
     document.getElementById('f-prioridade').value = state.draft.prioridade || 'normal';
     document.getElementById('f-recorrencia').value = state.draft.recorrencia || 'nenhuma';
-    document.getElementById('f-anexo').value = state.draft.anexoUrl || '';
 
     document.getElementById('f-responsaveis-list').classList.remove('hidden');
     document.getElementById('f-responsaveis-view').classList.add('hidden');
     buildPersonPillPicker(fRespList, state.draft.responsaveis, editable);
+    refreshPapelSelect();
+    document.getElementById('f-papel-principal').disabled = !editable;
 
     document.getElementById('f-sigiloso-field').classList.toggle('hidden', !isAdmin());
     document.getElementById('f-sigiloso').checked = !!state.draft.sigiloso;
 
     [document.getElementById('f-titulo'), document.getElementById('f-descricao'), document.getElementById('f-tipo'),
      document.getElementById('f-prazo'), document.getElementById('f-status'), document.getElementById('f-sigiloso'),
-     document.getElementById('f-prioridade'), document.getElementById('f-recorrencia'), document.getElementById('f-anexo')].forEach(function(el){
+     document.getElementById('f-prioridade'), document.getElementById('f-recorrencia')].forEach(function(el){
       el.disabled = !editable;
     });
 
@@ -1706,8 +1804,14 @@
     document.getElementById('task-save-btn').classList.toggle('hidden', !editable);
 
     document.getElementById('f-comments-field').classList.toggle('hidden', isNew);
+    document.getElementById('f-checklist-field').classList.toggle('hidden', isNew);
+    document.getElementById('f-anexos-field').classList.toggle('hidden', isNew);
     document.getElementById('task-history-btn').classList.toggle('hidden', isNew || !isAdmin());
-    if(!isNew) renderTaskComments(task.id);
+    if(!isNew){
+      renderTaskComments(task.id);
+      renderTaskChecklist(task.id);
+      renderTaskAnexos(task.id);
+    }
 
     taskOverlay.classList.remove('hidden');
   }
@@ -1729,6 +1833,199 @@
       showPopoverNear(this, 'HISTÓRICO DA TAREFA', itemsHtml || '<div class="fp-item" style="cursor:default;color:var(--muted);">Nenhum histórico registrado ainda.</div>');
     }catch(err){
       showToast('Não consegui buscar o histórico. Detalhe técnico: '+(err && err.message ? err.message : err));
+    }
+  });
+
+  var CHECKLIST_TEMPLATES = {
+    admissao: ['Conferir documentos do colaborador','Cadastrar no sistema','Agendar exame admissional','Criar acessos (e-mail, sistemas)','Enviar kit de boas-vindas','Agendar integração'],
+    desligamento: ['Conferir aviso prévio','Calcular saldo de salário e verbas','Calcular férias proporcionais','Gerar guia FGTS rescisório','Recolher crachá e equipamentos','Enviar para aprovação do gestor'],
+    treinamento: ['Definir conteúdo e carga horária','Reservar sala ou link','Convocar participantes','Confirmar presença na véspera','Emitir certificados'],
+    beneficios: ['Conferir elegibilidade','Validar valores com a operadora','Atualizar cadastro no sistema','Comunicar ao colaborador'],
+    folha: ['Conferir batidas e horas extras','Conferir descontos e faltas','Fechar cálculo com o financeiro','Gerar holerites','Enviar para aprovação'],
+  };
+
+  function taskChecklistProgress(taskId){
+    var list = state.taskChecklist.filter(function(c){ return c.tarefaId===taskId; });
+    var done = list.filter(function(c){ return c.concluido; }).length;
+    return {total:list.length, done:done};
+  }
+
+  function renderTaskChecklist(taskId){
+    var wrap = document.getElementById('f-checklist-list');
+    var list = state.taskChecklist.filter(function(c){ return c.tarefaId===taskId; })
+      .sort(function(a,b){ return a.ordem-b.ordem || a.id-b.id; });
+    var editable = state.draft ? canEditTask(state.draft) : false;
+    var progWrap = document.getElementById('f-checklist-progress-wrap');
+    var progFill = document.getElementById('f-checklist-progress-fill');
+    if(list.length===0){
+      wrap.innerHTML = '<div class="empty-note" style="padding:6px 0;">Nenhum item ainda.</div>';
+      progWrap.classList.add('hidden');
+    } else {
+      var done = list.filter(function(c){ return c.concluido; }).length;
+      progWrap.classList.remove('hidden');
+      progFill.style.width = Math.round(done/list.length*100)+'%';
+      wrap.innerHTML = list.map(function(c){
+        return '<div class="checklist-item'+(c.concluido?' done':'')+'">'+
+          '<button type="button" class="check-box" data-toggle="'+c.id+'" '+(editable?'':'disabled')+'></button>'+
+          '<span class="txt">'+escapeHtml(c.texto)+'</span>'+
+          (editable?'<button type="button" class="check-remove" data-remove="'+c.id+'" title="Remover">✕</button>':'')+
+        '</div>';
+      }).join('');
+    }
+  }
+  async function addChecklistItem(taskId, texto){
+    if(!texto || !texto.trim() || taskId==null) return;
+    var ordem = state.taskChecklist.filter(function(c){ return c.tarefaId===taskId; }).length;
+    if(state.conn==='online'){
+      try{
+        var res = await sb.from('tarefas_checklist').insert({tarefa_id:taskId, texto:texto.trim(), ordem:ordem});
+        if(res.error) throw res.error;
+        await reloadTaskChecklistFromSb();
+      }catch(err){
+        showToast('Não consegui adicionar o item. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em tabela "tarefas_checklist", rode o script supabase_fase2.sql no Supabase.');
+        return;
+      }
+    } else {
+      var nid = state.taskChecklist.reduce(function(m,x){return Math.max(m,x.id);},0)+1;
+      state.taskChecklist.push({id:nid, tarefaId:taskId, texto:texto.trim(), concluido:false, ordem:ordem});
+      saveLocalList(LS_TASK_CHECKLIST, state.taskChecklist);
+    }
+    renderTaskChecklist(taskId);
+  }
+  async function toggleChecklistItem(id){
+    var item = state.taskChecklist.find(function(c){ return c.id===id; });
+    if(!item) return;
+    var novo = !item.concluido;
+    if(state.conn==='online'){
+      try{ await sb.from('tarefas_checklist').update({concluido:novo}).eq('id', id); await reloadTaskChecklistFromSb(); }catch(err){}
+    } else {
+      item.concluido = novo;
+      saveLocalList(LS_TASK_CHECKLIST, state.taskChecklist);
+    }
+    renderTaskChecklist(item.tarefaId);
+  }
+  async function removeChecklistItem(id){
+    var item = state.taskChecklist.find(function(c){ return c.id===id; });
+    if(!item) return;
+    var taskId = item.tarefaId;
+    if(state.conn==='online'){
+      try{ await sb.from('tarefas_checklist').delete().eq('id', id); await reloadTaskChecklistFromSb(); }catch(err){}
+    } else {
+      state.taskChecklist = state.taskChecklist.filter(function(c){ return c.id!==id; });
+      saveLocalList(LS_TASK_CHECKLIST, state.taskChecklist);
+    }
+    renderTaskChecklist(taskId);
+  }
+  document.getElementById('f-checklist-list').addEventListener('click', function(e){
+    var t = e.target.closest('[data-toggle]');
+    if(t){ toggleChecklistItem(Number(t.getAttribute('data-toggle'))); return; }
+    var r = e.target.closest('[data-remove]');
+    if(r){ removeChecklistItem(Number(r.getAttribute('data-remove'))); }
+  });
+  document.getElementById('f-checklist-add').addEventListener('click', function(){
+    var taskId = state.draft && state.draft.id;
+    var input = document.getElementById('f-checklist-input');
+    if(taskId==null){ showToast('Salve a tarefa antes de adicionar itens ao checklist.'); return; }
+    addChecklistItem(taskId, input.value);
+    input.value = '';
+  });
+  document.getElementById('f-checklist-template').addEventListener('change', function(){
+    var key = this.value; this.value = '';
+    var taskId = state.draft && state.draft.id;
+    if(!key || taskId==null){ if(!key) return; showToast('Salve a tarefa antes de aplicar um modelo de checklist.'); return; }
+    var itens = CHECKLIST_TEMPLATES[key] || [];
+    itens.reduce(function(p, texto){ return p.then(function(){ return addChecklistItem(taskId, texto); }); }, Promise.resolve());
+  });
+
+  function renderTaskAnexos(taskId){
+    var wrap = document.getElementById('f-anexos-list');
+    var list = state.taskAnexos.filter(function(a){ return a.tarefaId===taskId; });
+    var editable = state.draft ? canEditTask(state.draft) : false;
+    if(list.length===0){
+      wrap.innerHTML = '<div class="empty-note" style="padding:6px 0;">Nenhum anexo ainda.</div>';
+    } else {
+      wrap.innerHTML = list.map(function(a){
+        var href = safeHref(a.url);
+        var icon = a.tipo==='pdf' ? '📄' : (a.tipo==='imagem' ? '🖼️' : '🔗');
+        return '<div class="anexo-item">'+
+          '<span class="anexo-icon">'+icon+'</span>'+
+          (href ? '<a href="'+href+'" target="_blank" rel="noopener" class="anexo-nome">'+escapeHtml(a.nome)+'</a>' : '<span class="anexo-nome">'+escapeHtml(a.nome)+'</span>')+
+          (editable?'<button type="button" class="anexo-remove" data-remove-anexo="'+a.id+'" title="Remover">✕</button>':'')+
+        '</div>';
+      }).join('');
+    }
+  }
+  async function addTaskAnexo(taskId, nome, url, tipo){
+    if(!url || taskId==null) return;
+    var autor = state.session.username;
+    if(state.conn==='online'){
+      try{
+        var res = await sb.from('tarefas_anexos').insert({tarefa_id:taskId, nome:nome, url:url, tipo:tipo||'link', criado_por:autor});
+        if(res.error) throw res.error;
+        await reloadTaskAnexosFromSb();
+      }catch(err){
+        showToast('Não consegui anexar. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em tabela "tarefas_anexos", rode o script supabase_fase2.sql no Supabase.');
+        return;
+      }
+    } else {
+      var nid = state.taskAnexos.reduce(function(m,x){return Math.max(m,x.id);},0)+1;
+      state.taskAnexos.push({id:nid, tarefaId:taskId, nome:nome, url:url, tipo:tipo||'link', criadoPor:autor});
+      saveLocalList(LS_TASK_ANEXOS, state.taskAnexos);
+    }
+    renderTaskAnexos(taskId);
+  }
+  async function removeTaskAnexo(id){
+    var item = state.taskAnexos.find(function(a){ return a.id===id; });
+    if(!item) return;
+    var taskId = item.tarefaId;
+    if(state.conn==='online'){
+      try{ await sb.from('tarefas_anexos').delete().eq('id', id); await reloadTaskAnexosFromSb(); }catch(err){}
+    } else {
+      state.taskAnexos = state.taskAnexos.filter(function(a){ return a.id!==id; });
+      saveLocalList(LS_TASK_ANEXOS, state.taskAnexos);
+    }
+    renderTaskAnexos(taskId);
+  }
+  async function uploadTaskFile(file){
+    var ext = file.name.split('.').pop().toLowerCase();
+    var tipo = ext==='pdf' ? 'pdf' : 'imagem';
+    var path = 'tarefas/'+Date.now()+'_'+Math.random().toString(36).slice(2,8)+'.'+ext;
+    var up = await sb.storage.from('mural-anexos').upload(path, file);
+    if(up.error) throw up.error;
+    var pub = sb.storage.from('mural-anexos').getPublicUrl(path);
+    return {url: pub.data.publicUrl, nome: file.name, tipo: tipo};
+  }
+  document.getElementById('f-anexos-list').addEventListener('click', function(e){
+    var r = e.target.closest('[data-remove-anexo]');
+    if(r){ removeTaskAnexo(Number(r.getAttribute('data-remove-anexo'))); }
+  });
+  document.getElementById('f-anexo-add-link').addEventListener('click', function(){
+    var taskId = state.draft && state.draft.id;
+    var input = document.getElementById('f-anexo-url-input');
+    var url = input.value.trim();
+    if(!url) return;
+    if(taskId==null){ showToast('Salve a tarefa antes de anexar um link.'); return; }
+    if(!/^https?:\/\//i.test(url)){ showToast('O link precisa começar com http:// ou https://'); return; }
+    addTaskAnexo(taskId, url.replace(/^https?:\/\//i,'').slice(0,60), url, 'link');
+    input.value = '';
+  });
+  document.getElementById('f-anexo-upload-btn').addEventListener('click', function(){
+    if(state.draft && state.draft.id==null){ showToast('Salve a tarefa antes de anexar um arquivo.'); return; }
+    if(state.conn!=='online'){ showToast('Anexar arquivo só funciona com o site conectado ao Supabase.'); return; }
+    document.getElementById('f-anexo-file-input').click();
+  });
+  document.getElementById('f-anexo-file-input').addEventListener('change', async function(){
+    var file = this.files[0]; this.value='';
+    if(!file) return;
+    var taskId = state.draft && state.draft.id;
+    var okTypes = ['application/pdf','image/png','image/jpeg'];
+    if(okTypes.indexOf(file.type)===-1){ showToast('Só é possível anexar PDF, PNG ou JPG.'); return; }
+    if(file.size > 8*1024*1024){ showToast('Arquivo muito grande (máximo 8MB).'); return; }
+    try{
+      var uploaded = await uploadTaskFile(file);
+      await addTaskAnexo(taskId, uploaded.nome, uploaded.url, uploaded.tipo);
+    }catch(err){
+      showToast('Não consegui enviar o arquivo. Detalhe técnico: '+(err && err.message ? err.message : err));
     }
   });
 
@@ -1789,7 +2086,7 @@
     d.sigiloso = isAdmin() ? document.getElementById('f-sigiloso').checked : (d.sigiloso||false);
     d.prioridade = document.getElementById('f-prioridade').value;
     d.recorrencia = document.getElementById('f-recorrencia').value;
-    d.anexoUrl = document.getElementById('f-anexo').value.trim();
+    var principalResp = document.getElementById('f-papel-principal').value || (d.responsaveis[0]||null);
 
     var justConcluded = wasStatus!=='done' && d.status==='done';
     var justReopened = wasStatus==='done' && d.status!=='done';
@@ -1822,7 +2119,7 @@
         if(taskId!=null){
           await sb.from('tarefas_responsaveis').delete().eq('tarefa_id', taskId);
           if(d.responsaveis.length){
-            await sb.from('tarefas_responsaveis').insert(d.responsaveis.map(function(u){ return {tarefa_id:taskId, username:u}; }));
+            await sb.from('tarefas_responsaveis').insert(d.responsaveis.map(function(u){ return {tarefa_id:taskId, username:u, papel: u===principalResp ? 'principal' : 'apoio'}; }));
           }
         }
         if(nextOccurrence){
@@ -1830,7 +2127,7 @@
           var insN = await sb.from('tarefas').insert(rowN).select();
           var newId = insN.data && insN.data[0] && insN.data[0].id;
           if(newId!=null && nextOccurrence.responsaveis.length){
-            await sb.from('tarefas_responsaveis').insert(nextOccurrence.responsaveis.map(function(u){ return {tarefa_id:newId, username:u}; }));
+            await sb.from('tarefas_responsaveis').insert(nextOccurrence.responsaveis.map(function(u){ return {tarefa_id:newId, username:u, papel: u===principalResp ? 'principal' : 'apoio'}; }));
           }
         }
         await reloadTasksFromSb();
@@ -1841,6 +2138,8 @@
       return;
     }
 
+    d.papelResp = {};
+    d.responsaveis.forEach(function(u){ d.papelResp[u] = u===principalResp ? 'principal' : 'apoio'; });
     if(d.id==null){
       var maxId = state.tasks.reduce(function(m,t){return Math.max(m, typeof t.id==='number'?t.id:0);},0);
       d.id = maxId+1;
@@ -2859,7 +3158,13 @@
   }
 
   function responsaveisLabel(t){
-    var names = (t.responsaveis||[]).map(function(u){ return state.users[u] ? state.users[u].displayName : u; });
+    var principal = t.papelResp ? Object.keys(t.papelResp).find(function(u){ return t.papelResp[u]==='principal'; }) : null;
+    var list = (t.responsaveis||[]).slice();
+    if(principal && list.indexOf(principal)!==-1){ list = [principal].concat(list.filter(function(u){ return u!==principal; })); }
+    var names = list.map(function(u){
+      var nm = state.users[u] ? state.users[u].displayName : u;
+      return (principal && u===principal && list.length>1) ? '★ '+nm : nm;
+    });
     return names.length ? names.join(', ') : 'Sem responsável';
   }
   function responsaveisAvatarsHtml(t, size){
@@ -2921,6 +3226,8 @@
           var comp = t.status==='done' ? fmtCompletion(t.prazo, t.concluidoEm) : null;
           var topPrazoText = comp ? ('Prazo: '+f.label) : (f.label+' · '+f.rel);
           var nComments = state.taskComments.filter(function(c){ return c.tarefaId===t.id; }).length;
+          var nAnexos = state.taskAnexos.filter(function(a){ return a.tarefaId===t.id; }).length;
+          var checklistProg = taskChecklistProgress(t.id);
           var card = document.createElement('div');
           card.className = 'card'+(od?' overdue':'')+(editable?'':' readonly-card');
           card.draggable = editable;
@@ -2929,12 +3236,13 @@
             '<div class="card-top">'+
               '<span class="'+typeStyle(t.tipo)+'">'+(t.tipo==='projeto'?'PROJETO':'ATIVIDADE')+'</span>'+
               (t.sigiloso ? '<span title="Sigilosa" style="font-size:12px;">🔒</span>' : '')+
-              (t.anexoUrl ? '<span title="Tem anexo" style="font-size:12px;">📎</span>' : '')+
+              ((t.anexoUrl || nAnexos>0) ? '<span title="Tem anexo" style="font-size:12px;">📎</span>' : '')+
               (t.recorrencia && t.recorrencia!=='nenhuma' ? '<span title="Tarefa recorrente" style="font-size:12px;">🔁</span>' : '')+
               '<span class="prazo-badge" style="'+prazoBadgeStyle(f, t.status==='done')+'">'+topPrazoText+'</span>'+
             '</div>'+
             '<div class="card-title">'+escapeHtml(t.titulo)+'</div>'+
             (t.descricao ? '<div class="card-desc">'+escapeHtml(t.descricao)+'</div>' : '')+
+            (checklistProg.total>0 ? '<div class="card-checklist-mini"><div class="progress-track"><div class="progress-fill" style="width:'+Math.round(checklistProg.done/checklistProg.total*100)+'%;"></div></div><span class="tabular">'+checklistProg.done+'/'+checklistProg.total+'</span></div>' : '')+
             (comp ? '<div style="margin:6px 0 2px;"><span class="prazo-badge" style="'+comp.styleVars+'">✅ '+comp.concLabel+' · '+comp.status+'</span></div>' : (t.status==='done' ? '<div style="font-size:11px;color:var(--muted);font-weight:600;margin:4px 0 2px;">Data de conclusão não registrada</div>' : ''))+
             '<div class="card-foot" style="padding-left:6px;">'+responsaveisAvatarsHtml(t,19)+'<span class="foot-name" style="margin-left:6px;">'+escapeHtml(responsaveisLabel(t))+'</span>'+(nComments>0?'<span style="margin-left:auto;font-size:10.5px;color:var(--muted);font-weight:700;">💬 '+nComments+'</span>':'')+'</div>';
           card.addEventListener('click', function(){ openTaskModal(t); });
@@ -3640,6 +3948,8 @@
     state.muralPosts = loadLocalList(LS_MURAL_POSTS);
     state.infoBoxAccess = loadLocalList(LS_INFO_ACCESS);
     state.taskComments = loadLocalList(LS_TASK_COMMENTS);
+    state.taskChecklist = loadLocalList(LS_TASK_CHECKLIST);
+    state.taskAnexos = loadLocalList(LS_TASK_ANEXOS);
     state.muralReactions = loadLocalList(LS_MURAL_REACTIONS);
     state.muralViews = loadLocalList(LS_MURAL_VIEWS);
     state.readMarks = (function(){ try{ return JSON.parse(localStorage.getItem(LS_READ_MARKS)||'{}'); }catch(e){ return {}; } })();
