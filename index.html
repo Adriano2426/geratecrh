@@ -50,9 +50,9 @@
   html, body{background:var(--bg);}
   body{transition:background-color .2s ease, color .2s ease;}
   *{box-sizing:border-box;}
-  .col-body::-webkit-scrollbar, .list-section-body::-webkit-scrollbar, .thread-list::-webkit-scrollbar, .modal::-webkit-scrollbar{width:6px;}
-  .col-body::-webkit-scrollbar-thumb, .list-section-body::-webkit-scrollbar-thumb, .thread-list::-webkit-scrollbar-thumb, .modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
-  .col-body::-webkit-scrollbar-track, .list-section-body::-webkit-scrollbar-track, .thread-list::-webkit-scrollbar-track, .modal::-webkit-scrollbar-track{background:transparent;}
+  .col-body::-webkit-scrollbar, .list-section-body::-webkit-scrollbar, .thread-list::-webkit-scrollbar{width:6px;}
+  .col-body::-webkit-scrollbar-thumb, .list-section-body::-webkit-scrollbar-thumb, .thread-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
+  .col-body::-webkit-scrollbar-track, .list-section-body::-webkit-scrollbar-track, .thread-list::-webkit-scrollbar-track{background:transparent;}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;}
   button,input,select,textarea{font-family:inherit;}
   button{cursor:pointer;}
@@ -250,7 +250,11 @@
 
   /* ---------- MODAL ---------- */
   .overlay{position:fixed;inset:0;background:var(--overlay-bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:1000;}
-  .modal{background:var(--card);border-radius:18px;padding:26px;width:100%;max-width:460px;max-height:88vh;overflow:auto;box-shadow:0 30px 60px -20px rgba(26,23,38,.4);scrollbar-width:thin;}
+  .modal{background:var(--card);border-radius:18px;width:100%;max-width:460px;max-height:88vh;overflow:hidden;box-shadow:0 30px 60px -20px rgba(26,23,38,.4);display:flex;flex-direction:column;}
+  .modal-body{padding:26px;overflow:auto;min-height:0;scrollbar-width:thin;}
+  .modal-body::-webkit-scrollbar{width:6px;}
+  .modal-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;}
+  .modal-body::-webkit-scrollbar-track{background:transparent;}
   .modal h2{font-size:17px;font-weight:800;margin:0 0 6px;}
   .modal .modal-sub{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 16px;line-height:1.5;}
   .modal .field label{font-size:11.5px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px;}
@@ -655,7 +659,7 @@
 
 <!-- ============ TASK MODAL ============ -->
 <div class="overlay hidden" id="task-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2 id="task-modal-title">Nova atividade</h2>
     <p class="modal-sub hidden" id="task-readonly-note">Você pode visualizar esta tarefa, mas só quem está atribuído a ela (ou o admin) pode editá-la.</p>
     <form id="task-form">
@@ -668,7 +672,7 @@
         <label>Responsáveis</label>
         <div style="font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:6px;">Clique em um ou mais nomes para atribuir a tarefa a eles — quem estiver marcado com fundo verde é responsável.</div>
         <div id="f-responsaveis-view" class="resp-pills"></div>
-        <div class="chips-grid" id="f-responsaveis-list" style="grid-template-columns:1fr;max-height:220px;overflow:auto;padding-right:2px;"></div>
+        <div class="chips-grid" id="f-responsaveis-list" style="grid-template-columns:repeat(2,1fr);max-height:220px;overflow:auto;padding-right:2px;"></div>
       </div>
       <div class="field hidden" id="f-papel-field">
         <label>Responsável principal</label>
@@ -736,12 +740,12 @@
         <button type="submit" class="btn btn-save hidden" id="task-save-btn">Salvar</button>
       </div>
     </form>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ TEAM MODAL (admin) ============ -->
 <div class="overlay hidden" id="team-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2>Gerenciar equipe</h2>
     <div class="team-list" id="team-list"></div>
     <form id="team-add-form">
@@ -751,12 +755,12 @@
         <button type="submit" class="btn btn-save">Adicionar pessoa</button>
       </div>
     </form>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ CONNECTION MODAL (admin) ============ -->
 <div class="overlay hidden" id="conn-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2>Sincronização em nuvem</h2>
     <p class="modal-sub">Conecte a um projeto Supabase para que todos os usuários vejam os mesmos dados, em tempo real, em qualquer dispositivo.</p>
     <div class="conn-status-line" id="conn-status-line"><span class="dot"></span><span id="conn-status-text">Modo local — dados salvos só neste navegador</span></div>
@@ -769,12 +773,12 @@
         <button type="submit" class="btn btn-save">Conectar</button>
       </div>
     </form>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ NOVA CAIXA DE CONVERSA ============ -->
 <div class="overlay hidden" id="info-new-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2>Nova caixa de conversa</h2>
     <form id="info-new-form">
       <div class="field"><label>Título</label><input id="info-new-titulo" placeholder="Ex.: Avisos do RH, Manutenção do prédio..." required></div>
@@ -793,12 +797,12 @@
         <button type="submit" class="btn btn-save">Criar caixa</button>
       </div>
     </form>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ THREAD DA CAIXA DE CONVERSA ============ -->
 <div class="overlay hidden" id="info-thread-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2 id="info-thread-title">Caixa</h2>
     <p class="modal-sub" id="info-thread-meta"></p>
     <div class="thread-list" id="thread-list"></div>
@@ -810,12 +814,12 @@
       <button type="button" class="btn btn-cancel" id="info-thread-close">Fechar</button>
       <button type="button" class="btn btn-delete hidden" id="info-box-delete">Excluir caixa</button>
     </div>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ NOVA CAIXA (tema/categoria) ============ -->
 <div class="overlay hidden" id="vault-new-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2>Nova caixa</h2>
     <form id="vault-new-form">
       <div class="field"><label>Nome / tema</label><input id="vault-new-titulo" placeholder="Ex.: Sistemas financeiros, Fornecedores..." required></div>
@@ -836,12 +840,12 @@
         <button type="submit" class="btn btn-save">Criar caixa</button>
       </div>
     </form>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ DETALHE / EDIÇÃO DA CAIXA ============ -->
 <div class="overlay hidden" id="vault-detail-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2 id="vault-detail-title">Caixa</h2>
     <p class="modal-sub" id="vault-detail-meta"></p>
     <div id="vault-detail-obs-wrap" class="field" style="margin-top:2px"><label>Observações</label><div id="vault-detail-obs" style="font-size:13px;color:var(--muted);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;"></div></div>
@@ -867,25 +871,25 @@
       <button type="button" class="btn btn-delete hidden" id="vault-detail-delete">Excluir</button>
       <button type="button" class="btn btn-save hidden" id="vault-detail-save">Salvar alterações</button>
     </div>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ TAREFAS DO DIA (calendário) ============ -->
 <div class="floating-panel hidden" id="generic-popover" style="position:fixed;max-height:260px;overflow:auto;min-width:auto;width:max-content;max-width:min(280px, calc(100vw - 24px));z-index:1200;"></div>
 
 <div class="overlay hidden" id="day-overlay">
-  <div class="modal">
+  <div class="modal"><div class="modal-body">
     <h2 id="day-modal-title">Tarefas do dia</h2>
     <div class="thread-list" id="day-task-list" style="max-height:50vh;"></div>
     <div class="modal-actions">
       <button type="button" class="btn btn-cancel" id="day-close">Fechar</button>
     </div>
-  </div>
+  </div></div>
 </div>
 
 <!-- ============ IMPORTAR TAREFAS ============ -->
 <div class="overlay hidden" id="import-overlay">
-  <div class="modal" style="max-width:640px;">
+  <div class="modal" style="max-width:640px;"><div class="modal-body">
     <h2>Importar tarefas</h2>
     <p class="modal-sub">Arraste uma planilha Excel preenchida com o modelo, ou cole o texto direto. O sistema confere linha por linha antes de importar.</p>
 
@@ -915,7 +919,7 @@
       <button type="button" class="btn btn-cancel" id="import-cancel">Cancelar</button>
       <button type="button" class="btn btn-save hidden" id="import-confirm">Importar tarefas válidas</button>
     </div>
-  </div>
+  </div></div>
 </div>
 
 <script>
