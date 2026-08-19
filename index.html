@@ -1462,6 +1462,14 @@
     var d = today();
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
+  // Quantos dias faltam até o fim desta semana (sábado — mesma convenção do calendário,
+  // que começa no domingo). Serve pra "vencendo essa semana" significar de verdade
+  // "até domingo", e não "nos próximos 7 dias" (que invadiria a semana seguinte).
+  function diasAteFimDaSemana(){ return 6 - today().getDay(); }
+  function venceEstaSemana(prazo){
+    var d = fmtPrazo(prazo).days;
+    return d>=0 && d<=diasAteFimDaSemana();
+  }
   function fmtPrazo(iso){
     var d = new Date(iso+'T00:00:00');
     var days = Math.round((d-today())/86400000);
@@ -3129,7 +3137,7 @@
         if(t.status==='done') return false;
         var dias = fmtPrazo(t.prazo).days;
         if(state.dueFilter==='atrasadas' && !(dias<0)) return false;
-        if(state.dueFilter==='semana' && !(dias>=0 && dias<=7)) return false;
+        if(state.dueFilter==='semana' && !venceEstaSemana(t.prazo)) return false;
       }
       if(!state.boardShowAllMonths){
         var refDate = (t.status==='done' && t.concluidoEm) ? t.concluidoEm.slice(0,7) : String(t.prazo||'').slice(0,7);
@@ -3150,7 +3158,7 @@
       return (t.responsaveis||[]).indexOf(me)!==-1 && t.status!=='done';
     });
     var atrasadas = mine.filter(function(t){ return fmtPrazo(t.prazo).days<0; }).length;
-    var estaSemana = mine.filter(function(t){ var d=fmtPrazo(t.prazo).days; return d>=0 && d<=7; }).length;
+    var estaSemana = mine.filter(function(t){ return venceEstaSemana(t.prazo); }).length;
     var banner = document.getElementById('my-pending-banner');
     if(atrasadas===0 && estaSemana===0){ banner.classList.add('hidden'); return; }
     var parts = [];
