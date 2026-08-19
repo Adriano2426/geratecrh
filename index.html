@@ -218,9 +218,14 @@
   .foot-av{width:19px;height:19px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex:none;}
   .foot-name{font-size:11.5px;font-weight:700;}
   .card-vez{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:6px;background:var(--warn-bg);color:var(--warn-text);margin-bottom:8px;}
+  .pending-banner{margin:16px 32px 0;padding:11px 14px 11px 16px;border-radius:12px;background:var(--chip-bg);border:1px solid var(--border);font-size:13px;font-weight:700;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .pending-banner .pb-msg{flex:1;min-width:180px;}
   .banner-link{border:0;background:transparent;padding:0;font:inherit;color:var(--ink);font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
   .banner-link:hover{opacity:.75;}
   .banner-link.atrasada{color:var(--danger-text);}
+  .due-chip{display:inline-flex;align-items:center;gap:6px;margin-left:auto;background:var(--card);border:1.5px solid var(--brand-green);color:var(--brand-green);border-radius:20px;padding:4px 5px 4px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;}
+  .due-chip .x{width:19px;height:19px;flex:none;border:0;padding:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .due-chip .x:hover{background:var(--brand-green);color:var(--card);}
   .card-checklist-mini{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .card-checklist-mini .progress-track{flex:1;}
   .card-checklist-mini span{font-size:10.5px;font-weight:700;color:var(--muted);}
@@ -513,7 +518,7 @@
   </div>
 
   <div id="board-section">
-    <div id="my-pending-banner" class="hidden" style="margin:16px 32px 0;padding:12px 16px;border-radius:12px;background:var(--chip-bg);border:1px solid var(--border);font-size:13px;font-weight:700;"></div>
+    <div id="my-pending-banner" class="pending-banner hidden"></div>
     <div class="toolbar">
       <div class="row" id="admin-filter-row" style="gap:10px;">
         <button class="team-btn" id="board-month-prev">◀</button>
@@ -3164,8 +3169,12 @@
     var parts = [];
     if(atrasadas>0) parts.push('<button type="button" class="banner-link atrasada" data-due="atrasadas">'+atrasadas+' tarefa'+(atrasadas>1?'s':'')+' atrasada'+(atrasadas>1?'s':'')+'</button>');
     if(estaSemana>0) parts.push('<button type="button" class="banner-link" data-due="semana">'+estaSemana+' vencendo essa semana</button>');
-    banner.innerHTML = '👋 Você tem '+parts.join(' e ')+'.'+
-      (state.dueFilter ? ' <button type="button" class="banner-link" data-due="limpar">✕ limpar filtro</button>' : '');
+    banner.innerHTML =
+      '<span class="pb-msg">👋 Você tem '+parts.join(' e ')+'.</span>'+
+      (state.dueFilter
+        ? '<span class="due-chip">Mostrando '+(state.dueFilter==='atrasadas' ? 'atrasadas' : 'desta semana')+
+          '<button type="button" class="x" data-due="limpar" title="Limpar filtro" aria-label="Limpar filtro">✕</button></span>'
+        : '');
     banner.querySelectorAll('button[data-due]').forEach(function(b){
       b.addEventListener('click', function(){ applyDueFilter(b.getAttribute('data-due')); });
     });
