@@ -3242,7 +3242,7 @@
           var od = t.status!=='done' && f.days<0;
           var editable = canEditTask(t);
           var comp = t.status==='done' ? fmtCompletion(t.prazo, t.concluidoEm) : null;
-          var topPrazoText = comp ? ('✅ '+comp.status) : (t.status==='done' ? 'Sem data de conclusão' : (f.label+' · '+f.rel));
+          var topPrazoText = comp ? ('✅ '+comp.status) : (t.status==='done' ? 'Sem data de conclusão' : (f.days<0 ? f.rel : ''));
           var topPrazoStyle = comp ? comp.styleVars : prazoBadgeStyle(f, t.status==='done');
           var nComments = state.taskComments.filter(function(c){ return c.tarefaId===t.id; }).length;
           var nAnexos = state.taskAnexos.filter(function(a){ return a.tarefaId===t.id; }).length;
@@ -3257,7 +3257,7 @@
               (t.sigiloso ? '<span title="Sigilosa" style="font-size:12px;">🔒</span>' : '')+
               ((t.anexoUrl || nAnexos>0) ? '<span title="Tem anexo" style="font-size:12px;">📎</span>' : '')+
               (t.recorrencia && t.recorrencia!=='nenhuma' ? '<span title="Tarefa recorrente" style="font-size:12px;">🔁</span>' : '')+
-              '<span class="prazo-badge" style="'+topPrazoStyle+'">'+topPrazoText+'</span>'+
+              (topPrazoText ? '<span class="prazo-badge" style="'+topPrazoStyle+'">'+topPrazoText+'</span>' : '')+
             '</div>'+
             '<div class="card-title">'+escapeHtml(t.titulo)+'</div>'+
             (t.descricao ? '<div class="card-desc">'+escapeHtml(t.descricao)+'</div>' : '')+
