@@ -146,9 +146,9 @@
   .density-compact .kcard-gap{margin-bottom:5px;}
   .team-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:700;font-size:12.5px;padding:7px 13px;border-radius:9px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);}
   .chips-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;}
-  .person-chip{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:9px;border:1.5px solid var(--border);width:100%;background:var(--card);transition:background-color .12s ease,border-color .12s ease;}
+  .person-chip{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:9px;border:2px solid var(--border);width:100%;background:var(--card);transition:background-color .12s ease,border-color .12s ease;}
   .person-chip:not(:disabled):hover{background:var(--chip-bg);}
-  .person-chip.active{background:var(--chip-bg);border-color:var(--brand-green);box-shadow:0 0 0 1px var(--brand-green);}
+  .person-chip.active{background:var(--chip-bg);border-color:var(--brand-green);}
   .person-chip .av{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex:none;}
   .person-chip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
   .person-chip.active .nm{font-weight:800;}
@@ -217,6 +217,7 @@
   .card-foot{display:flex;align-items:center;gap:7px;}
   .foot-av{width:19px;height:19px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex:none;}
   .foot-name{font-size:11.5px;font-weight:700;}
+  .card-vez{display:inline-block;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:6px;background:var(--warn-bg);color:var(--warn-text);margin-bottom:8px;}
   .card-checklist-mini{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .card-checklist-mini .progress-track{flex:1;}
   .card-checklist-mini span{font-size:10.5px;font-weight:700;color:var(--muted);}
@@ -680,6 +681,7 @@
       </div>
       <div class="field"><label>Prazo</label><input type="date" id="f-prazo" required>
         <div id="f-prazo-lock-note" class="hidden" style="font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;">🔒 Só o admin pode alterar o prazo depois que a tarefa já foi criada.</div>
+        <div id="f-prazo-past-note" class="hidden" style="font-size:11.5px;color:var(--danger-text);font-weight:700;margin-top:5px;">O prazo não pode ser uma data que já passou. Escolha hoje ou uma data futura.</div>
       </div>
       <div class="field"><label>Status</label>
         <select id="f-status"><option value="todo">Não iniciado</option><option value="doing">Em andamento</option><option value="aguardando">Aguardando terceiros</option><option value="done">Concluído</option></select>
@@ -883,6 +885,19 @@
     <div class="thread-list" id="day-task-list" style="max-height:50vh;"></div>
     <div class="modal-actions">
       <button type="button" class="btn btn-cancel" id="day-close">Fechar</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- ============ REPASSE AO CONCLUIR (tarefa com vários responsáveis) ============ -->
+<div class="overlay hidden" id="handoff-overlay">
+  <div class="modal" style="max-width:420px;"><div class="modal-body">
+    <h2>Quem dá andamento agora?</h2>
+    <p class="modal-sub" id="handoff-sub">Esta tarefa tem mais de um responsável, então ela só termina depois que todo mundo fizer a parte dele. Escolha quem precisa agir agora — a tarefa vai para "Aguardando terceiros" no nome dessa pessoa.</p>
+    <div class="chips-grid" id="handoff-list" style="grid-template-columns:1fr;max-height:230px;overflow:auto;padding:2px;"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-cancel" id="handoff-cancel">Cancelar</button>
+      <button type="button" class="btn btn-save" id="handoff-finish">Ninguém — concluir de vez</button>
     </div>
   </div></div>
 </div>
@@ -1187,7 +1202,7 @@
   }
 
   function mapUserRow(r){ return {username:r.username, displayName:r.display_name, password:r.password, role:r.role, mustChangePassword: !!r.must_change_password}; }
-  function mapTaskRow(r){ return {id:r.id, titulo:r.titulo, descricao:r.descricao||'', tipo:r.tipo||'atividade', prazo:r.prazo, status:r.status||'todo', sigiloso: !!r.sigiloso, responsaveis: [], prioridade:r.prioridade||'normal', recorrencia:r.recorrencia||'nenhuma', anexoUrl:r.anexo_url||'', concluidoEm:r.concluido_em||null}; }
+  function mapTaskRow(r){ return {id:r.id, titulo:r.titulo, descricao:r.descricao||'', tipo:r.tipo||'atividade', prazo:r.prazo, status:r.status||'todo', sigiloso: !!r.sigiloso, responsaveis: [], prioridade:r.prioridade||'normal', recorrencia:r.recorrencia||'nenhuma', anexoUrl:r.anexo_url||'', concluidoEm:r.concluido_em||null, vezDe:r.vez_de||null}; }
   function mapTaskCommentRow(r){ return {id:r.id, tarefaId:r.tarefa_id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em}; }
   function mapTaskChecklistRow(r){ return {id:r.id, tarefaId:r.tarefa_id, texto:r.texto, concluido:!!r.concluido, ordem:r.ordem||0}; }
   function mapTaskAnexoRow(r){ return {id:r.id, tarefaId:r.tarefa_id, nome:r.nome, url:r.url, tipo:r.tipo, criadoPor:r.criado_por}; }
@@ -1208,6 +1223,32 @@
       if(Object.keys(map).length) state.users = map;
     });
   }
+  // A coluna "vez_de" (de quem é a vez numa tarefa compartilhada) pode ainda não existir no banco,
+  // se o script SQL mais recente não tiver sido rodado. Nesse caso o site continua funcionando
+  // sem o recurso, em vez de quebrar o salvamento de tarefa inteiro.
+  var vezDeSupported = true;
+  function withVezDe(row, vezDe){
+    if(vezDeSupported) row.vez_de = vezDe || null;
+    return row;
+  }
+  function isMissingVezDe(err){
+    var msg = (err && err.message ? err.message : String(err||'')).toLowerCase();
+    return msg.indexOf('vez_de') !== -1;
+  }
+  async function sbTasksWrite(op, row, id){
+    var run = function(r){
+      return op==='insert' ? sb.from('tarefas').insert(r).select() : sb.from('tarefas').update(r).eq('id', id);
+    };
+    var res = await run(row);
+    if(res.error && isMissingVezDe(res.error)){
+      vezDeSupported = false;
+      var semVez = Object.assign({}, row);
+      delete semVez.vez_de;
+      res = await run(semVez);
+    }
+    return res;
+  }
+
   function reloadTasksFromSb(){
     return sb.from('tarefas').select('*').then(function(res){
       if(res.error) throw res.error;
@@ -1413,6 +1454,10 @@
   }
 
   function today(){ var d=new Date(); d.setHours(0,0,0,0); return d; }
+  function todayIso(){
+    var d = today();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
   function fmtPrazo(iso){
     var d = new Date(iso+'T00:00:00');
     var days = Math.round((d-today())/86400000);
@@ -1788,7 +1833,7 @@
     state.draft = task ? Object.assign({}, task, {responsaveis:(task.responsaveis||[]).slice(), papelPrincipal:papelPrincipal||null}) : {
       id:null, titulo:'', descricao:'', tipo:'atividade',
       responsaveis: isAdmin() ? [] : [state.session.username],
-      prazo:'2026-07-01', status:'todo', sigiloso:false, prioridade:'normal', recorrencia:'nenhuma', anexoUrl:'', papelPrincipal:null
+      prazo:todayIso(), status:'todo', sigiloso:false, prioridade:'normal', recorrencia:'nenhuma', anexoUrl:'', papelPrincipal:null
     };
     var editable = isNew || canEditTask(task);
 
@@ -1823,6 +1868,9 @@
     var prazoLocked = !isNew && !isAdmin();
     if(prazoLocked) prazoField.disabled = true;
     if(prazoLockNote) prazoLockNote.classList.toggle('hidden', !prazoLocked);
+    // Não deixa escolher data que já passou (tarefa antiga mantém o prazo original até mexerem nele)
+    prazoField.min = todayIso();
+    document.getElementById('f-prazo-past-note').classList.add('hidden');
 
     var canDelete = !isNew && editable;
     document.getElementById('task-delete').classList.toggle('hidden', !canDelete);
@@ -1841,6 +1889,48 @@
     taskOverlay.classList.remove('hidden');
   }
   function closeTaskModal(){ taskOverlay.classList.add('hidden'); state.draft=null; }
+
+  // ---------- REPASSE AO CONCLUIR ----------
+  // Tarefa com mais de um responsável não termina quando uma pessoa só faz a parte dela:
+  // ao concluir, quem está fechando escolhe para quem passa a bola.
+  var handoffResolve = null;
+  function askHandoff(task, candidatos){
+    return new Promise(function(resolve){
+      handoffResolve = resolve;
+      var wrap = document.getElementById('handoff-list');
+      wrap.innerHTML = '';
+      candidatos.forEach(function(u){
+        var p = pal(u);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'person-chip';
+        btn.setAttribute('data-username', u);
+        btn.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm">'+escapeHtml(userName(u))+'</span>';
+        btn.addEventListener('click', function(){
+          closeHandoff();
+          resolve({action:'handoff', username:u});
+        });
+        wrap.appendChild(btn);
+      });
+      document.getElementById('handoff-overlay').classList.remove('hidden');
+    });
+  }
+  function closeHandoff(){
+    document.getElementById('handoff-overlay').classList.add('hidden');
+    handoffResolve = null;
+  }
+  document.getElementById('handoff-cancel').addEventListener('click', function(){
+    var r = handoffResolve; closeHandoff();
+    if(r) r({action:'cancel'});
+  });
+  document.getElementById('handoff-finish').addEventListener('click', function(){
+    var r = handoffResolve; closeHandoff();
+    if(r) r({action:'done'});
+  });
+  // Quem pode receber a bola: os outros responsáveis (não faz sentido repassar pra si mesmo)
+  function handoffCandidates(task){
+    return (task.responsaveis||[]).filter(function(u){ return u!==state.session.username; });
+  }
   document.getElementById('task-cancel').addEventListener('click', closeTaskModal);
   document.getElementById('task-history-btn').addEventListener('click', async function(e){
     e.stopPropagation();
@@ -2113,8 +2203,43 @@
     d.recorrencia = document.getElementById('f-recorrencia').value;
     var principalResp = document.getElementById('f-papel-principal').value || (d.responsaveis[0]||null);
 
+    // Prazo no passado só é bloqueado se a pessoa acabou de escolher essa data.
+    // Tarefa antiga que já estava atrasada continua editável (senão ninguém conseguiria nem concluí-la).
+    var pastNote = document.getElementById('f-prazo-past-note');
+    var prazoMudou = (d.id==null) || (d.prazo !== wasPrazo);
+    if(prazoMudou && d.prazo && d.prazo < todayIso()){
+      pastNote.classList.remove('hidden');
+      document.getElementById('f-prazo').focus();
+      d.prazo = wasPrazo;
+      return;
+    }
+    pastNote.classList.add('hidden');
+
     var justConcluded = wasStatus!=='done' && d.status==='done';
     var justReopened = wasStatus==='done' && d.status!=='done';
+
+    // Tarefa compartilhada: ao concluir, perguntar quem dá andamento antes de fechar de vez
+    var handoffTo = null;
+    if(justConcluded){
+      var candidatos = handoffCandidates(d);
+      if(candidatos.length){
+        var escolha = await askHandoff(d, candidatos);
+        if(escolha.action==='cancel'){ d.status = wasStatus; return; }
+        if(escolha.action==='handoff'){
+          handoffTo = escolha.username;
+          d.status = 'aguardando';
+          d.vezDe = handoffTo;
+          d.concluidoEm = null;
+          justConcluded = false;
+        } else {
+          d.vezDe = null;
+        }
+      } else {
+        d.vezDe = null;
+      }
+    }
+    if(justReopened) d.vezDe = null;
+
     if(justConcluded) d.concluidoEm = new Date().toISOString();
     if(justReopened) d.concluidoEm = null;
     var nextOccurrence = null;
@@ -2127,19 +2252,21 @@
     }
 
     if(state.conn==='online'){
-      var row = {titulo:d.titulo, descricao:d.descricao, tipo:d.tipo, prazo:d.prazo, status:d.status, sigiloso:d.sigiloso, prioridade:d.prioridade, recorrencia:d.recorrencia, anexo_url:d.anexoUrl, concluido_em:d.concluidoEm};
+      var row = withVezDe({titulo:d.titulo, descricao:d.descricao, tipo:d.tipo, prazo:d.prazo, status:d.status, sigiloso:d.sigiloso, prioridade:d.prioridade, recorrencia:d.recorrencia, anexo_url:d.anexoUrl, concluido_em:d.concluidoEm}, d.vezDe);
       closeTaskModal();
       try{
         var taskId = d.id;
         if(taskId==null){
-          var ins = await sb.from('tarefas').insert(row).select();
+          var ins = await sbTasksWrite('insert', row);
           if(ins.error) throw ins.error;
           taskId = ins.data && ins.data[0] && ins.data[0].id;
           await logTaskAction(taskId, 'Tarefa criada');
         } else {
-          var upd = await sb.from('tarefas').update(row).eq('id', taskId);
+          var upd = await sbTasksWrite('update', row, taskId);
           if(upd.error) throw upd.error;
-          await logTaskAction(taskId, 'Atualizada — status: '+statusLabel(d.status)+', prioridade: '+d.prioridade);
+          await logTaskAction(taskId, handoffTo
+            ? 'Repassou para '+userName(handoffTo)+' dar andamento'
+            : 'Atualizada — status: '+statusLabel(d.status)+', prioridade: '+d.prioridade);
         }
         if(taskId!=null){
           await sb.from('tarefas_responsaveis').delete().eq('tarefa_id', taskId);
@@ -3206,14 +3333,41 @@
     var wasStatus = task.status;
     var justConcluded = wasStatus!=='done' && newStatus==='done';
     var justReopened = wasStatus==='done' && newStatus!=='done';
+
+    // Mesma regra do modal: tarefa compartilhada não fecha sem dizer quem toca daqui pra frente
+    var vezDe = task.vezDe || null;
+    var handoffTo = null;
+    if(justConcluded){
+      var candidatos = handoffCandidates(task);
+      if(candidatos.length){
+        var escolha = await askHandoff(task, candidatos);
+        if(escolha.action==='cancel') return {wasStatus:wasStatus, finalStatus:wasStatus, cancelled:true};
+        if(escolha.action==='handoff'){
+          handoffTo = escolha.username;
+          newStatus = 'aguardando';
+          vezDe = handoffTo;
+          justConcluded = false;
+        } else {
+          vezDe = null;
+        }
+      } else {
+        vezDe = null;
+      }
+    }
+    if(justReopened) vezDe = null;
+
     var concluidoEm = justConcluded ? new Date().toISOString() : (justReopened ? null : task.concluidoEm);
     if(state.conn==='online'){
-      try{ await sb.from('tarefas').update({status:newStatus, concluido_em:concluidoEm}).eq('id', id); await reloadTasksFromSb(); }catch(err){}
+      try{
+        await sbTasksWrite('update', withVezDe({status:newStatus, concluido_em:concluidoEm}, vezDe), id);
+        if(handoffTo) await logTaskAction(id, 'Repassou para '+userName(handoffTo)+' dar andamento');
+        await reloadTasksFromSb();
+      }catch(err){}
     } else {
-      state.tasks = state.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{status:newStatus, concluidoEm:concluidoEm}) : t; });
+      state.tasks = state.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{status:newStatus, concluidoEm:concluidoEm, vezDe:vezDe}) : t; });
       saveLocalTasks(state.tasks);
     }
-    return wasStatus;
+    return {wasStatus:wasStatus, finalStatus:newStatus, handoffTo:handoffTo};
   }
 
   function renderKanban(visible){
@@ -3268,6 +3422,7 @@
             '<div class="card-title">'+escapeHtml(t.titulo)+'</div>'+
             (t.descricao ? '<div class="card-desc">'+escapeHtml(t.descricao)+'</div>' : '')+
             (checklistProg.total>0 ? '<div class="card-checklist-mini"><div class="progress-track"><div class="progress-fill" style="width:'+Math.round(checklistProg.done/checklistProg.total*100)+'%;"></div></div><span class="tabular">'+checklistProg.done+'/'+checklistProg.total+'</span></div>' : '')+
+            (t.vezDe && t.status!=='done' ? '<div class="card-vez">🤝 Vez de '+escapeHtml(userName(t.vezDe))+'</div>' : '')+
             '<div class="card-foot" style="padding-left:6px;">'+responsaveisAvatarsHtml(t,19)+'<span class="foot-name" style="margin-left:6px;">'+escapeHtml(responsaveisLabel(t))+'</span>'+(nComments>0?'<span style="margin-left:auto;font-size:10.5px;color:var(--muted);font-weight:700;">💬 '+nComments+'</span>':'')+'</div>';
           card.addEventListener('click', function(){ openTaskModal(t); });
           card.addEventListener('dragstart', function(e){
@@ -3308,10 +3463,13 @@
         if(!canEditTask(task)) return;
         if(task.status===col.key) return;
         state.dragId = null;
-        var wasStatus = await setTaskStatus(id, col.key);
+        var res = await setTaskStatus(id, col.key);
         render();
-        if(wasStatus){
-          showUndoToast('Movida para "'+col.label+'"', function(){ setTaskStatus(id, wasStatus).then(render); });
+        if(res && !res.cancelled && res.wasStatus){
+          var msg = res.handoffTo
+            ? 'Aguardando '+userName(res.handoffTo)+' dar andamento'
+            : 'Movida para "'+col.label+'"';
+          showUndoToast(msg, function(){ setTaskStatus(id, res.wasStatus).then(render); });
         }
       });
 
