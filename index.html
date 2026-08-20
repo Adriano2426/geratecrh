@@ -77,6 +77,9 @@
   .quote-box{margin-top:18px;padding:14px 16px;border-radius:14px;background:var(--chip-bg);border:1px solid var(--border);}
   .quote-box .qtext{font-size:12.5px;font-style:italic;color:var(--ink);line-height:1.5;text-align:center;}
   .quote-box .qauthor{font-size:11px;font-weight:800;color:var(--brand-green);text-align:center;margin-top:6px;}
+  .quote-box .qbook{font-style:italic;font-weight:700;}
+  .quote-box .qlink{color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
+  .quote-box .qlink:hover{color:var(--brand-green);text-decoration-style:solid;}
   .login-conn{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted);}
   .conn-dot{width:7px;height:7px;border-radius:50%;background:#c9c4d8;}
   .conn-dot.online{background:#16a070;}
@@ -671,6 +674,7 @@
   <div class="modal"><div class="modal-body">
     <h2 id="task-modal-title">Nova atividade</h2>
     <p class="modal-sub hidden" id="task-readonly-note">Você pode visualizar esta tarefa, mas só quem está atribuído a ela (ou o admin) pode editá-la.</p>
+    <div class="hidden" id="task-locked-note" style="background:var(--chip-bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;line-height:1.5;">🔒 Tarefa concluída. O status não pode mais ser alterado, e ela não aceita novos comentários nem exclusão — nem por admin.</div>
     <form id="task-form">
       <div class="field"><label>Título</label><input id="f-titulo" required></div>
       <div class="field"><label>Descrição</label><textarea id="f-descricao"></textarea></div>
@@ -738,7 +742,7 @@
       <div class="field" id="f-comments-field">
         <label>Comentários</label>
         <div class="thread-list" id="task-comments-list" style="max-height:180px;"></div>
-        <div class="thread-input-row">
+        <div class="thread-input-row" id="task-comment-row">
           <textarea id="task-comment-input" placeholder="Escrever comentário..." style="min-height:38px;"></textarea>
           <button type="button" class="btn btn-save" id="task-comment-send" style="align-self:flex-end;">Enviar</button>
         </div>
@@ -1497,53 +1501,101 @@
   // ---------- FRASE MOTIVACIONAL ----------
   var QUOTES = [
     // ---- Bíblia Sagrada ----
-    {texto:'Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.', autor:'Eclesiastes 3:1'},
-    {texto:'Amai-vos uns aos outros, assim como eu vos amei.', autor:'João 13:34'},
-    {texto:'Tudo posso naquele que me fortalece.', autor:'Filipenses 4:13'},
-    {texto:'O Senhor é o meu pastor; nada me faltará.', autor:'Salmos 23:1'},
-    {texto:'Porque para Deus nada é impossível.', autor:'Lucas 1:37'},
-    {texto:'Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.', autor:'Provérbios 3:5'},
-    {texto:'Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus.', autor:'Isaías 41:10'},
-    {texto:'O Senhor é a minha luz e a minha salvação; a quem temerei?', autor:'Salmos 27:1'},
-    {texto:'Ora, a fé é o firme fundamento das coisas que se esperam, e a prova das coisas que se não veem.', autor:'Hebreus 11:1'},
-    {texto:'Bem-aventurados os pobres de espírito, porque deles é o reino dos céus.', autor:'Mateus 5:3'},
-    {texto:'Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas essas coisas vos serão acrescentadas.', autor:'Mateus 6:33'},
-    {texto:'Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.', autor:'Eclesiastes 9:10'},
-    {texto:'Não vos conformeis com este século, mas transformai-vos pela renovação do vosso entendimento.', autor:'Romanos 12:2'},
-    {texto:'O temor do Senhor é o princípio da sabedoria.', autor:'Provérbios 9:10'},
-    {texto:'Regozijai-vos sempre no Senhor; outra vez digo, regozijai-vos.', autor:'Filipenses 4:4'},
-    {texto:'Esforça-te, e tem bom ânimo; não temas, porque o Senhor teu Deus é o que vai contigo.', autor:'Deuteronômio 31:6'},
-    {texto:'Lâmpada para os meus pés é tua palavra, e luz para o meu caminho.', autor:'Salmos 119:105'},
-    {texto:'E conhecereis a verdade, e a verdade vos libertará.', autor:'João 8:32'},
-    {texto:'Tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.', autor:'Colossenses 3:23'},
-    {texto:'Porque eu bem sei os pensamentos que penso a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal.', autor:'Jeremias 29:11'},
-    // ---- Pensadores e escritores brasileiros ----
-    {texto:'Feliz aquele que transfere o que sabe e aprende o que ensina.', autor:'Cora Coralina'},
-    {texto:'No meio do caminho tinha uma pedra, tinha uma pedra no meio do caminho.', autor:'Carlos Drummond de Andrade'},
-    {texto:'A justiça atrasada não é justiça, senão injustiça qualificada e manifesta.', autor:'Rui Barbosa'},
-    {texto:'Viver é muito perigoso.', autor:'Guimarães Rosa'},
-    {texto:'Que ninguém se engane, só se consegue a simplicidade através de muito trabalho.', autor:'Clarice Lispector'},
-    {texto:'Ao vencedor, as batatas.', autor:'Machado de Assis'},
+    {texto:'Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.', autor:'Eclesiastes 3:1', cat:'biblia'},
+    {texto:'Amai-vos uns aos outros, assim como eu vos amei.', autor:'João 13:34', cat:'biblia'},
+    {texto:'Tudo posso naquele que me fortalece.', autor:'Filipenses 4:13', cat:'biblia'},
+    {texto:'O Senhor é o meu pastor; nada me faltará.', autor:'Salmos 23:1', cat:'biblia'},
+    {texto:'Porque para Deus nada é impossível.', autor:'Lucas 1:37', cat:'biblia'},
+    {texto:'Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento.', autor:'Provérbios 3:5', cat:'biblia'},
+    {texto:'Não temas, porque eu sou contigo; não te assombres, porque eu sou o teu Deus.', autor:'Isaías 41:10', cat:'biblia'},
+    {texto:'O Senhor é a minha luz e a minha salvação; a quem temerei?', autor:'Salmos 27:1', cat:'biblia'},
+    {texto:'Ora, a fé é o firme fundamento das coisas que se esperam, e a prova das coisas que se não veem.', autor:'Hebreus 11:1', cat:'biblia'},
+    {texto:'Bem-aventurados os pobres de espírito, porque deles é o reino dos céus.', autor:'Mateus 5:3', cat:'biblia'},
+    {texto:'Buscai, pois, primeiro o reino de Deus, e a sua justiça, e todas essas coisas vos serão acrescentadas.', autor:'Mateus 6:33', cat:'biblia'},
+    {texto:'Tudo quanto te vier à mão para fazer, faze-o conforme as tuas forças.', autor:'Eclesiastes 9:10', cat:'biblia'},
+    {texto:'Não vos conformeis com este século, mas transformai-vos pela renovação do vosso entendimento.', autor:'Romanos 12:2', cat:'biblia'},
+    {texto:'O temor do Senhor é o princípio da sabedoria.', autor:'Provérbios 9:10', cat:'biblia'},
+    {texto:'Regozijai-vos sempre no Senhor; outra vez digo, regozijai-vos.', autor:'Filipenses 4:4', cat:'biblia'},
+    {texto:'Esforça-te, e tem bom ânimo; não temas, porque o Senhor teu Deus é o que vai contigo.', autor:'Deuteronômio 31:6', cat:'biblia'},
+    {texto:'Lâmpada para os meus pés é tua palavra, e luz para o meu caminho.', autor:'Salmos 119:105', cat:'biblia'},
+    {texto:'E conhecereis a verdade, e a verdade vos libertará.', autor:'João 8:32', cat:'biblia'},
+    {texto:'Tudo quanto fizerdes, fazei-o de todo o coração, como ao Senhor, e não aos homens.', autor:'Colossenses 3:23', cat:'biblia'},
+    {texto:'Porque eu bem sei os pensamentos que penso a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal.', autor:'Jeremias 29:11', cat:'biblia'},
+    // ---- Pensadores e escritores brasileiros (clássicos e contemporâneos) ----
+    {texto:'Feliz aquele que transfere o que sabe e aprende o que ensina.', autor:'Cora Coralina', cat:'brasil'},
+    {texto:'No meio do caminho tinha uma pedra, tinha uma pedra no meio do caminho.', autor:'Carlos Drummond de Andrade', cat:'brasil'},
+    {texto:'A justiça atrasada não é justiça, senão injustiça qualificada e manifesta.', autor:'Rui Barbosa', cat:'brasil'},
+    {texto:'Viver é muito perigoso.', autor:'Guimarães Rosa', cat:'brasil'},
+    {texto:'Que ninguém se engane, só se consegue a simplicidade através de muito trabalho.', autor:'Clarice Lispector', cat:'brasil'},
+    {texto:'Ao vencedor, as batatas.', autor:'Machado de Assis', cat:'brasil'},
+    {texto:'Todos esses que aí estão atravancando meu caminho, eles passarão. Eu passarinho.', autor:'Mario Quintana', cat:'brasil'},
+    {texto:'O otimista é um tolo, o pessimista, um chato. Bom mesmo é ser um realista esperançoso.', autor:'Ariano Suassuna', cat:'brasil'},
+    {texto:'Não somos donos da verdade, mas também não somos hóspedes da mentira.', autor:'Mario Sergio Cortella', cat:'brasil'},
+    {texto:'Ninguém motiva ninguém. O que vem de fora é estímulo; motivação é interna.', autor:'Mario Sergio Cortella', cat:'brasil'},
+    {texto:'A ética é a reflexão sobre a melhor maneira de viver junto.', autor:'Clóvis de Barros Filho', cat:'brasil'},
+    {texto:'Quem ama, educa.', autor:'Içami Tiba', cat:'brasil'},
+    {texto:'Educar é acreditar na vida e ter esperança no futuro.', autor:'Augusto Cury', cat:'brasil'},
+    {texto:'Ninguém é obrigado a ser feliz o tempo todo; somos obrigados a dar sentido ao que vivemos.', autor:'Leandro Karnal', cat:'brasil'},
     // ---- Teólogos e pensadores cristãos (Reformados, Pentecostais e Carismáticos) ----
-    {texto:'Fizeste-nos para Ti, e o nosso coração está inquieto enquanto não repousa em Ti.', autor:'Agostinho de Hipona'},
-    {texto:'Nossa sabedoria consiste quase inteiramente de duas partes: o conhecimento de Deus e o conhecimento de nós mesmos.', autor:'João Calvino'},
-    {texto:'Aqui estou, não posso fazer de outra forma. Que Deus me ajude.', autor:'Martinho Lutero'},
-    {texto:'Ore como se tudo dependesse de Deus, e trabalhe como se tudo dependesse de você.', autor:'Charles Spurgeon'},
-    {texto:'Resolvo viver com toda a minha força, enquanto eu viver.', autor:'Jonathan Edwards'},
-    {texto:'Pegue fogo com santidade e o mundo virá para ver você queimar.', autor:'John Wesley'},
-    {texto:'O que vem à nossa mente quando pensamos em Deus é a coisa mais importante sobre nós.', autor:'A. W. Tozer'},
-    {texto:'Deus não pode usar grandemente um homem até que o tenha ferido profundamente.', autor:'Smith Wigglesworth'},
-    {texto:'Deus é mais glorificado em nós quando estamos mais satisfeitos nEle.', autor:'John Piper'},
-    {texto:'Coragem é contagiante. Quando um homem corajoso toma uma posição, a espinha dorsal dos outros se enrijece.', autor:'Billy Graham'},
+    {texto:'Fizeste-nos para Ti, e o nosso coração está inquieto enquanto não repousa em Ti.', autor:'Agostinho de Hipona', cat:'teologo'},
+    {texto:'Nossa sabedoria consiste quase inteiramente de duas partes: o conhecimento de Deus e o conhecimento de nós mesmos.', autor:'João Calvino', cat:'teologo'},
+    {texto:'Aqui estou, não posso fazer de outra forma. Que Deus me ajude.', autor:'Martinho Lutero', cat:'teologo'},
+    {texto:'Ore como se tudo dependesse de Deus, e trabalhe como se tudo dependesse de você.', autor:'Charles Spurgeon', cat:'teologo'},
+    {texto:'Resolvo viver com toda a minha força, enquanto eu viver.', autor:'Jonathan Edwards', cat:'teologo'},
+    {texto:'Pegue fogo com santidade e o mundo virá para ver você queimar.', autor:'John Wesley', cat:'teologo'},
+    {texto:'O que vem à nossa mente quando pensamos em Deus é a coisa mais importante sobre nós.', autor:'A. W. Tozer', cat:'teologo'},
+    {texto:'Deus não pode usar grandemente um homem até que o tenha ferido profundamente.', autor:'Smith Wigglesworth', cat:'teologo'},
+    {texto:'Deus é mais glorificado em nós quando estamos mais satisfeitos nEle.', autor:'John Piper', cat:'teologo'},
+    {texto:'Coragem é contagiante. Quando um homem corajoso toma uma posição, a espinha dorsal dos outros se enrijece.', autor:'Billy Graham', cat:'teologo'},
+    // ---- Livros (clássicos, ficção e não-ficção) — o texto vira link de busca do livro ----
+    {texto:'O essencial é invisível aos olhos.', autor:'Antoine de Saint-Exupéry', livro:'O Pequeno Príncipe', cat:'livro'},
+    {texto:'Tu te tornas eternamente responsável por aquilo que cativas.', autor:'Antoine de Saint-Exupéry', livro:'O Pequeno Príncipe', cat:'livro'},
+    {texto:'Tudo o que temos de decidir é o que fazer com o tempo que nos é dado.', autor:'J. R. R. Tolkien', livro:'O Senhor dos Anéis', cat:'livro'},
+    {texto:'Nem todos os que vagueiam estão perdidos.', autor:'J. R. R. Tolkien', livro:'O Senhor dos Anéis', cat:'livro'},
+    {texto:'São nossas escolhas que revelam o que realmente somos, muito mais do que nossas habilidades.', autor:'J. K. Rowling', livro:'Harry Potter e a Câmara Secreta', cat:'livro'},
+    {texto:'Você nunca compreende de verdade uma pessoa até ver as coisas do ponto de vista dela.', autor:'Harper Lee', livro:'O Sol é para Todos', cat:'livro'},
+    {texto:'Quando você quer alguma coisa, todo o universo conspira para que realize seu desejo.', autor:'Paulo Coelho', livro:'O Alquimista', cat:'livro'},
+    {texto:'Quem controla o passado controla o futuro; quem controla o presente controla o passado.', autor:'George Orwell', livro:'1984', cat:'livro'},
+    {texto:'Quem tem um porquê para viver suporta quase qualquer como.', autor:'Viktor Frankl', livro:'Em Busca de Sentido', cat:'livro'},
+    {texto:'Entre o estímulo e a resposta há um espaço, e nesse espaço está a nossa liberdade de escolher.', autor:'Viktor Frankl', livro:'Em Busca de Sentido', cat:'livro'},
+    {texto:'Hábitos são os juros compostos do autoaperfeiçoamento.', autor:'James Clear', livro:'Hábitos Atômicos', cat:'livro'},
+    {texto:'Você não se eleva ao nível dos seus objetivos: você cai ao nível dos seus sistemas.', autor:'James Clear', livro:'Hábitos Atômicos', cat:'livro'},
+    {texto:'Procure primeiro compreender, depois ser compreendido.', autor:'Stephen R. Covey', livro:'Os 7 Hábitos das Pessoas Altamente Eficazes', cat:'livro'},
+    {texto:'As pessoas não compram o que você faz, elas compram o porquê você faz.', autor:'Simon Sinek', livro:'Comece pelo Porquê', cat:'livro'},
+    {texto:'Numa mentalidade de crescimento, as pessoas acreditam que suas habilidades podem ser desenvolvidas.', autor:'Carol Dweck', livro:'Mindset', cat:'livro'},
+    {texto:'Uma parte de tudo o que você ganha é sua para guardar.', autor:'George S. Clason', livro:'O Homem Mais Rico da Babilônia', cat:'livro'},
+    {texto:'Os seres humanos dominaram o mundo porque são os únicos que cooperam de forma flexível e em grande número.', autor:'Yuval Noah Harari', livro:'Sapiens', cat:'livro'},
+    {texto:'Nada na vida é tão importante quanto você pensa que é, enquanto está pensando nisso.', autor:'Daniel Kahneman', livro:'Rápido e Devagar', cat:'livro'},
   ];
+
+  // Regra igualitária: em vez de percorrer a lista em ordem (o que faria a mesma
+  // categoria aparecer vários dias seguidos, já que elas têm tamanhos diferentes),
+  // roda uma categoria por dia em rodízio e, dentro dela, avança de uma em uma.
+  // Assim cada categoria aparece exatamente 1 dia a cada 4, independente de quantas
+  // frases ela tem — e nenhuma frase é pulada dentro da sua categoria.
+  var QUOTE_CATS = ['biblia','brasil','teologo','livro'];
+  function quoteOfTheDay(diaDoAno){
+    var cat = QUOTE_CATS[diaDoAno % QUOTE_CATS.length];
+    var lista = QUOTES.filter(function(q){ return q.cat===cat; });
+    if(!lista.length) lista = QUOTES;
+    var idx = Math.floor(diaDoAno / QUOTE_CATS.length) % lista.length;
+    return lista[idx];
+  }
   function showRandomQuote(){
     var box = document.getElementById('quote-box');
     if(!box) return;
     var hoje = new Date();
     var inicioAno = new Date(hoje.getFullYear(),0,0);
     var diaDoAno = Math.floor((hoje - inicioAno) / 86400000);
-    var q = QUOTES[diaDoAno % QUOTES.length];
-    box.innerHTML = '<div class="qtext">"'+q.texto+'"</div><div class="qauthor">— '+q.autor+'</div>';
+    var q = quoteOfTheDay(diaDoAno);
+    var texto = '"'+escapeHtml(q.texto)+'"';
+    // Frase de livro: o texto vira link pra busca do livro no Google
+    if(q.livro){
+      var busca = 'https://www.google.com/search?q='+encodeURIComponent('livro '+q.livro+' '+q.autor);
+      texto = '<a href="'+busca+'" target="_blank" rel="noopener" class="qlink" title="Pesquisar o livro no Google">'+texto+'</a>';
+    }
+    box.innerHTML = '<div class="qtext">'+texto+'</div>'+
+      '<div class="qauthor">— '+escapeHtml(q.autor)+(q.livro ? ', <span class="qbook">'+escapeHtml(q.livro)+'</span>' : '')+'</div>';
   }
 
   function populateLoginSelect(){
@@ -1819,6 +1871,9 @@
     if(isAdmin()) return true;
     return (task.responsaveis||[]).indexOf(state.session.username) !== -1;
   }
+  // Tarefa concluída fica travada para todo mundo, admin inclusive: não muda de status,
+  // não recebe comentário e não pode ser excluída.
+  function isLocked(task){ return !!task && task.status==='done'; }
 
   function renderRespPills(list){
     var wrap = document.getElementById('f-responsaveis-view');
@@ -1889,11 +1944,17 @@
     prazoField.min = todayIso();
     document.getElementById('f-prazo-past-note').classList.add('hidden');
 
-    var canDelete = !isNew && editable;
+    // Tarefa concluída: trava status, comentário e exclusão para todo mundo (admin incluído)
+    var locked = !isNew && isLocked(task);
+    document.getElementById('task-locked-note').classList.toggle('hidden', !locked);
+    if(locked) document.getElementById('f-status').disabled = true;
+
+    var canDelete = !isNew && editable && !locked;
     document.getElementById('task-delete').classList.toggle('hidden', !canDelete);
     document.getElementById('task-save-btn').classList.toggle('hidden', !editable);
 
     document.getElementById('f-comments-field').classList.toggle('hidden', isNew);
+    document.getElementById('task-comment-row').classList.toggle('hidden', locked);
     document.getElementById('f-checklist-field').classList.toggle('hidden', isNew);
     document.getElementById('f-anexos-field').classList.toggle('hidden', isNew);
     document.getElementById('task-history-btn').classList.toggle('hidden', isNew || !isAdmin());
@@ -2178,6 +2239,7 @@
     var input = document.getElementById('task-comment-input');
     var texto = input.value.trim();
     if(!texto || taskId==null) return;
+    if(isLocked(state.draft)){ showToast('Tarefa concluída não aceita novos comentários.'); return; }
     var autor = state.session.username;
     if(state.conn==='online'){
       try{
@@ -2214,7 +2276,8 @@
     d.tipo = document.getElementById('f-tipo').value;
     d.responsaveis = readPersonPillPicker(fRespList);
     d.prazo = (d.id!=null && !isAdmin()) ? wasPrazo : document.getElementById('f-prazo').value;
-    d.status = document.getElementById('f-status').value;
+    // Concluída fica concluída: o status não sai mais de 'done', nem por admin
+    d.status = (wasStatus==='done') ? 'done' : document.getElementById('f-status').value;
     d.sigiloso = isAdmin() ? document.getElementById('f-sigiloso').checked : (d.sigiloso||false);
     d.prioridade = document.getElementById('f-prioridade').value;
     d.recorrencia = document.getElementById('f-recorrencia').value;
@@ -2328,6 +2391,7 @@
 
   document.getElementById('task-delete').addEventListener('click', async function(){
     if(!state.draft) return;
+    if(isLocked(state.draft)){ showToast('Tarefa concluída não pode ser excluída.'); return; }
     if(!confirm('Excluir esta tarefa? Essa ação não pode ser desfeita.')) return;
     var id = state.draft.id;
     if(state.conn==='online'){
@@ -3383,6 +3447,7 @@
   async function setTaskStatus(id, newStatus){
     var task = state.tasks.find(function(t){return t.id===id;});
     if(!task) return;
+    if(isLocked(task)){ showToast('Tarefa concluída não pode mudar de status.'); return; }
     var wasStatus = task.status;
     var justConcluded = wasStatus!=='done' && newStatus==='done';
     var justReopened = wasStatus==='done' && newStatus!=='done';
@@ -3462,7 +3527,7 @@
           var checklistProg = taskChecklistProgress(t.id);
           var card = document.createElement('div');
           card.className = 'card'+(od?' overdue':'')+(editable?'':' readonly-card');
-          card.draggable = editable;
+          card.draggable = editable && !isLocked(t); // concluída não sai mais da coluna
           card.style.setProperty('--pr-stripe', priorityStripeColor(t.prioridade));
           card.innerHTML =
             '<div class="card-top">'+
@@ -3522,7 +3587,9 @@
           var msg = res.handoffTo
             ? 'Aguardando '+userName(res.handoffTo)+' dar andamento'
             : 'Movida para "'+col.label+'"';
-          showUndoToast(msg, function(){ setTaskStatus(id, res.wasStatus).then(render); });
+          // Concluída trava — não faz sentido oferecer desfazer que não vai funcionar
+          if(res.finalStatus==='done') showToast(msg+' — tarefa concluída fica travada.', true);
+          else showUndoToast(msg, function(){ setTaskStatus(id, res.wasStatus).then(render); });
         }
       });
 
@@ -3749,7 +3816,7 @@
     if(!/^https?:\/\//i.test(s)) return '';
     return escapeHtml(s);
   }
-  function showToast(msg){
+  function showToast(msg, neutro){
     var host = document.getElementById('toast-host');
     if(!host){
       host = document.createElement('div');
@@ -3759,7 +3826,10 @@
     }
     var el = document.createElement('div');
     el.textContent = msg;
-    el.style.cssText = 'background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:700;box-shadow:0 6px 20px -6px var(--shadow-card);max-width:420px;text-align:center;pointer-events:auto;';
+    var cores = neutro
+      ? 'background:var(--card);color:var(--ink);border:1px solid var(--border);'
+      : 'background:var(--danger-bg);color:var(--danger-text);border:1px solid var(--danger-border);';
+    el.style.cssText = cores+'border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:700;box-shadow:0 6px 20px -6px var(--shadow-card);max-width:420px;text-align:center;pointer-events:auto;';
     host.appendChild(el);
     setTimeout(function(){
       el.style.transition='opacity .3s';
