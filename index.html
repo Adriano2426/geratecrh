@@ -329,6 +329,8 @@
   .ov-person-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2);font-size:12.5px;}
   .ov-person-row:last-child{border-bottom:0;}
   .ov-list-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px;cursor:pointer;}
+  .ov-vertodas{margin-top:12px;width:100%;border:1.5px solid var(--border);background:transparent;color:var(--brand-green);font-weight:800;font-size:11.5px;padding:8px;border-radius:9px;cursor:pointer;}
+  .ov-vertodas:hover{background:var(--chip-bg);border-color:var(--brand-green);}
   .ov-list-item:last-child{border-bottom:0;}
   .ov-list-item .t{flex:1;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
@@ -547,7 +549,6 @@
             <button type="button" id="person-filter-close" style="width:100%;margin-top:8px;border:0;background:var(--brand-green);color:#fff;font-weight:800;font-size:12px;padding:8px;border-radius:9px;cursor:pointer;">Concluído</button>
           </div>
         </div>
-        <span id="board-month-toggle" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brand-green);cursor:pointer;text-decoration:underline;white-space:nowrap;">Todos os meses</span>
       </div>
       <div class="row quick-filter-row" id="quick-filter-row">
         <span class="qf-label">Prioridade</span>
@@ -3378,12 +3379,15 @@
   }
 
   // Atalhos do aviso do topo: leva direto pro quadro já filtrado nas tarefas em questão
-  function applyDueFilter(kind){
+  // soMinhas: o aviso do topo fala das MINHAS tarefas; os cartões da Visão Geral
+  // falam do time todo, então esses passam false.
+  function applyDueFilter(kind, soMinhas){
+    if(soMinhas===undefined) soMinhas = true;
     if(kind==='limpar'){
       state.dueFilter = null;
     } else {
       state.dueFilter = kind;
-      state.onlyMine = true;           // o aviso fala das MINHAS tarefas
+      state.onlyMine = soMinhas;
       state.boardShowAllMonths = true; // atrasadas podem ser de meses anteriores
       state.priorityFilter = 'all';
       state.typeFilter = 'all';
@@ -4017,7 +4021,9 @@
     var pct = total ? Math.round(byStatus.done/total*100) : 0;
 
     var open = all.filter(function(t){ return t.status!=='done'; });
-    var overdue = open.filter(function(t){ return fmtPrazo(t.prazo).days<0; });
+    // mais atrasada primeiro — é a que precisa de atenção
+    var overdue = open.filter(function(t){ return fmtPrazo(t.prazo).days<0; })
+      .sort(function(a,b){ return a.prazo.localeCompare(b.prazo); });
     var next7 = open.filter(function(t){ var d=fmtPrazo(t.prazo).days; return d>=0 && d<=7; })
       .sort(function(a,b){ return a.prazo.localeCompare(b.prazo); });
 
@@ -4058,7 +4064,9 @@
       '<div style="margin-top:14px;">'+(overdue.length===0 ? '<div class="empty-note" style="padding:10px 0;">Nenhuma 🎉</div>' : overdue.slice(0,6).map(function(t){
         var f = fmtPrazo(t.prazo);
         return '<div class="ov-list-item" data-task-id="'+t.id+'"><span class="'+typeStyle(t.tipo)+'">'+(t.tipo==='projeto'?'PROJ':'ATIV')+'</span><span class="t">'+escapeHtml(t.titulo)+'</span><span style="color:var(--danger-text);font-weight:800;white-space:nowrap;">'+Math.abs(f.days)+'d</span></div>';
-      }).join(''))+'</div></div>';
+      }).join(''))+'</div>'+
+      (overdue.length>0 ? '<button type="button" class="ov-vertodas" data-ver="atrasadas">Ver as '+overdue.length+' no quadro →</button>' : '')+
+      '</div>';
 
     html += '<div class="ov-card"><h3>Prioridade (tarefas em aberto)</h3>'+prioBar('urgente','Urgente','#c4314b')+prioBar('normal','Normal','#8b86a0')+prioBar('baixa','Baixa','#2f8fe0')+'</div>';
 
@@ -4067,10 +4075,12 @@
       '<div class="ov-stat"><div class="ov-big-num" style="font-size:26px;color:var(--ink);">'+projetos+'</div><div class="ov-big-sub">Projetos</div></div>'+
       '</div></div>';
 
-    html += '<div class="ov-card"><h3>Próximos 7 dias</h3>'+(next7.length===0 ? '<div class="empty-note" style="padding:10px 0;">Nada vencendo essa semana</div>' : next7.slice(0,6).map(function(t){
+    html += '<div class="ov-card"><h3>Próximos 7 dias</h3>'+(next7.length===0 ? '<div class="empty-note" style="padding:10px 0;">Nada vencendo nos próximos 7 dias</div>' : next7.slice(0,6).map(function(t){
       var f = fmtPrazo(t.prazo);
       return '<div class="ov-list-item" data-task-id="'+t.id+'"><span class="'+typeStyle(t.tipo)+'">'+(t.tipo==='projeto'?'PROJ':'ATIV')+'</span><span class="t">'+escapeHtml(t.titulo)+'</span><span style="color:var(--muted);font-weight:700;white-space:nowrap;">'+f.rel+'</span></div>';
-    }).join(''))+'</div>';
+    }).join(''))+
+    (next7.length>6 ? '<button type="button" class="ov-vertodas" data-ver="semana">Ver as '+next7.length+' no quadro →</button>' : '')+
+    '</div>';
 
     html += '<div class="ov-card wide"><h3>Por pessoa (tarefas em aberto)</h3>'+(personKeys.length===0 ? '<div class="empty-note" style="padding:10px 0;">Ninguém com tarefas em aberto</div>' : personKeys.map(function(u){
       var p = pal(u);
@@ -4091,6 +4101,10 @@
         var t = state.tasks.find(function(x){ return x.id===id; });
         if(t) openTaskModal(t);
       });
+    });
+    // Os cartões da Visão Geral são do time todo, então o atalho não filtra "só as minhas"
+    wrap.querySelectorAll('button.ov-vertodas[data-ver]').forEach(function(btn){
+      btn.addEventListener('click', function(){ applyDueFilter(btn.getAttribute('data-ver'), false); });
     });
   }
 
