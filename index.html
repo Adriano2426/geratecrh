@@ -906,7 +906,7 @@
 <div class="overlay hidden" id="handoff-overlay">
   <div class="modal" style="max-width:420px;"><div class="modal-body">
     <h2>Quem dá andamento agora?</h2>
-    <p class="modal-sub" id="handoff-sub">Esta tarefa tem mais de um responsável, então ela só termina depois que todo mundo fizer a parte dele. Escolha quem precisa agir agora — a tarefa vai para "Aguardando terceiros" no nome dessa pessoa.</p>
+    <p class="modal-sub" id="handoff-sub">Esta tarefa tem mais de um responsável, então ela só termina depois que todo mundo fizer a parte dele. Escolha quem continua: a tarefa volta para "Não iniciado" como pendência dessa pessoa, mantendo o mesmo prazo.</p>
     <div class="chips-grid" id="handoff-list" style="grid-template-columns:1fr;max-height:230px;overflow:auto;padding:2px;"></div>
     <div class="modal-actions">
       <button type="button" class="btn btn-cancel" id="handoff-cancel">Cancelar</button>
@@ -1216,7 +1216,7 @@
   }
 
   function mapUserRow(r){ return {username:r.username, displayName:r.display_name, password:r.password, role:r.role, mustChangePassword: !!r.must_change_password}; }
-  function mapTaskRow(r){ return {id:r.id, titulo:r.titulo, descricao:r.descricao||'', tipo:r.tipo||'atividade', prazo:r.prazo, status:r.status||'todo', sigiloso: !!r.sigiloso, responsaveis: [], prioridade:r.prioridade||'normal', recorrencia:r.recorrencia||'nenhuma', anexoUrl:r.anexo_url||'', concluidoEm:r.concluido_em||null, vezDe:r.vez_de||null}; }
+  function mapTaskRow(r){ return {id:r.id, titulo:r.titulo, descricao:r.descricao||'', tipo:r.tipo||'atividade', prazo:r.prazo, status:r.status||'todo', sigiloso: !!r.sigiloso, responsaveis: [], prioridade:r.prioridade||'normal', recorrencia:r.recorrencia||'nenhuma', anexoUrl:r.anexo_url||'', concluidoEm:r.concluido_em||null, vezDe:r.vez_de||null, feitoPor:(r.feito_por ? String(r.feito_por).split(',').filter(Boolean) : [])}; }
   function mapTaskCommentRow(r){ return {id:r.id, tarefaId:r.tarefa_id, autor:r.autor, texto:r.texto, criadoEm:r.criado_em}; }
   function mapTaskChecklistRow(r){ return {id:r.id, tarefaId:r.tarefa_id, texto:r.texto, concluido:!!r.concluido, ordem:r.ordem||0}; }
   function mapTaskAnexoRow(r){ return {id:r.id, tarefaId:r.tarefa_id, nome:r.nome, url:r.url, tipo:r.tipo, criadoPor:r.criado_por}; }
@@ -1240,25 +1240,34 @@
   // A coluna "vez_de" (de quem é a vez numa tarefa compartilhada) pode ainda não existir no banco,
   // se o script SQL mais recente não tiver sido rodado. Nesse caso o site continua funcionando
   // sem o recurso, em vez de quebrar o salvamento de tarefa inteiro.
-  var vezDeSupported = true;
-  function withVezDe(row, vezDe){
-    if(vezDeSupported) row.vez_de = vezDe || null;
+  var colSuportada = {vez_de:true, feito_por:true};
+  function withVezDe(row, vezDe, feitoPor){
+    if(colSuportada.vez_de) row.vez_de = vezDe || null;
+    if(colSuportada.feito_por) row.feito_por = (feitoPor && feitoPor.length) ? feitoPor.join(',') : null;
     return row;
   }
-  function isMissingVezDe(err){
+  function colFaltando(err){
     var msg = (err && err.message ? err.message : String(err||'')).toLowerCase();
-    return msg.indexOf('vez_de') !== -1;
+    if(msg.indexOf('feito_por') !== -1) return 'feito_por';
+    if(msg.indexOf('vez_de') !== -1) return 'vez_de';
+    return null;
   }
   async function sbTasksWrite(op, row, id){
     var run = function(r){
       return op==='insert' ? sb.from('tarefas').insert(r).select() : sb.from('tarefas').update(r).eq('id', id);
     };
     var res = await run(row);
-    if(res.error && isMissingVezDe(res.error)){
-      vezDeSupported = false;
-      var semVez = Object.assign({}, row);
-      delete semVez.vez_de;
-      res = await run(semVez);
+    // Pode faltar mais de uma coluna; tira uma por vez e tenta de novo.
+    for(var i=0; i<2 && res.error; i++){
+      var falta = colFaltando(res.error);
+      if(!falta) break;
+      colSuportada[falta] = false;
+      var copia = Object.assign({}, row);
+      delete copia.vez_de; delete copia.feito_por;
+      if(colSuportada.vez_de) copia.vez_de = row.vez_de;
+      if(colSuportada.feito_por) copia.feito_por = row.feito_por;
+      row = copia;
+      res = await run(row);
     }
     return res;
   }
@@ -2139,8 +2148,22 @@
     if(r) r({action:'done'});
   });
   // Quem pode receber a bola: os outros responsáveis (não faz sentido repassar pra si mesmo)
+  // Quem ainda pode receber a bola: responsáveis que não sou eu e que ainda não
+  // entregaram a parte deles. Quando não sobra ninguém, a tarefa fecha direto.
   function handoffCandidates(task){
-    return (task.responsaveis||[]).filter(function(u){ return u!==state.session.username; });
+    var jaFizeram = task.feitoPor || [];
+    return (task.responsaveis||[]).filter(function(u){
+      return u!==state.session.username && jaFizeram.indexOf(u)===-1;
+    });
+  }
+  // De quem a tarefa é pendência AGORA. Numa tarefa de várias pessoas que já foi
+  // repassada, ela conta só pra quem está com ela (vezDe) — quem já fez a sua parte
+  // deixa de carregá-la nas contagens de "minhas tarefas", atrasadas e da semana.
+  // Todos os responsáveis continuam vendo e podendo mexer na tarefa.
+  function isPendingFor(t, user){
+    if(!t || t.status==='done') return false;
+    if((t.responsaveis||[]).indexOf(user)===-1) return false;
+    return t.vezDe ? t.vezDe===user : true;
   }
   document.getElementById('task-cancel').addEventListener('click', closeTaskModal);
   document.getElementById('task-history-btn').addEventListener('click', async function(e){
@@ -2440,18 +2463,21 @@
         if(escolha.action==='cancel'){ d.status = wasStatus; return; }
         if(escolha.action==='handoff'){
           handoffTo = escolha.username;
-          d.status = 'aguardando';
+          // Volta pro fluxo normal como pendência de quem recebeu (não é espera externa)
+          d.status = 'todo';
           d.vezDe = handoffTo;
+          d.feitoPor = (d.feitoPor||[]).concat([state.session.username])
+            .filter(function(u,i,a){ return a.indexOf(u)===i; });
           d.concluidoEm = null;
           justConcluded = false;
         } else {
-          d.vezDe = null;
+          d.vezDe = null; d.feitoPor = [];
         }
       } else {
-        d.vezDe = null;
+        d.vezDe = null; d.feitoPor = [];
       }
     }
-    if(justReopened) d.vezDe = null;
+    if(justReopened){ d.vezDe = null; d.feitoPor = []; }
 
     if(justConcluded) d.concluidoEm = new Date().toISOString();
     if(justReopened) d.concluidoEm = null;
@@ -2465,7 +2491,7 @@
     }
 
     if(state.conn==='online'){
-      var row = withVezDe({titulo:d.titulo, descricao:d.descricao, tipo:d.tipo, prazo:d.prazo, status:d.status, sigiloso:d.sigiloso, prioridade:d.prioridade, recorrencia:d.recorrencia, anexo_url:d.anexoUrl, concluido_em:d.concluidoEm}, d.vezDe);
+      var row = withVezDe({titulo:d.titulo, descricao:d.descricao, tipo:d.tipo, prazo:d.prazo, status:d.status, sigiloso:d.sigiloso, prioridade:d.prioridade, recorrencia:d.recorrencia, anexo_url:d.anexoUrl, concluido_em:d.concluidoEm}, d.vezDe, d.feitoPor);
       closeTaskModal();
       try{
         var taskId = d.id;
@@ -3334,7 +3360,12 @@
       if(state.selectedPeople.length>0 && !(t.responsaveis||[]).some(function(u){return state.selectedPeople.indexOf(u)!==-1;})) return false;
       if(state.typeFilter!=='all' && t.tipo!==state.typeFilter) return false;
       if(state.priorityFilter!=='all' && (t.prioridade||'normal')!==state.priorityFilter) return false;
-      if(state.onlyMine && (t.responsaveis||[]).indexOf(me)===-1) return false;
+      if(state.onlyMine){
+        // concluída: continua aparecendo pra quem era responsável (histórico).
+        // em aberto: só pra quem ela é pendência agora (respeita o repasse).
+        if(t.status==='done'){ if((t.responsaveis||[]).indexOf(me)===-1) return false; }
+        else if(!isPendingFor(t, me)) return false;
+      }
       if(state.dueFilter){
         if(t.status==='done') return false;
         var dias = fmtPrazo(t.prazo).days;
@@ -3356,9 +3387,7 @@
 
   function renderMyPendingBanner(){
     var me = state.session.username;
-    var mine = state.tasks.filter(function(t){
-      return (t.responsaveis||[]).indexOf(me)!==-1 && t.status!=='done';
-    });
+    var mine = state.tasks.filter(function(t){ return isPendingFor(t, me); });
     var atrasadas = mine.filter(function(t){ return fmtPrazo(t.prazo).days<0; }).length;
     var estaSemana = mine.filter(function(t){ return venceEstaSemana(t.prazo); }).length;
     var banner = document.getElementById('my-pending-banner');
@@ -3590,6 +3619,7 @@
 
     // Mesma regra do modal: tarefa compartilhada não fecha sem dizer quem toca daqui pra frente
     var vezDe = task.vezDe || null;
+    var feitoPor = (task.feitoPor||[]).slice();
     var handoffTo = null;
     if(justConcluded){
       var candidatos = handoffCandidates(task);
@@ -3598,27 +3628,28 @@
         if(escolha.action==='cancel') return {wasStatus:wasStatus, finalStatus:wasStatus, cancelled:true};
         if(escolha.action==='handoff'){
           handoffTo = escolha.username;
-          newStatus = 'aguardando';
+          newStatus = 'todo'; // pendência de quem recebeu, dentro do fluxo normal
           vezDe = handoffTo;
+          if(feitoPor.indexOf(state.session.username)===-1) feitoPor.push(state.session.username);
           justConcluded = false;
         } else {
-          vezDe = null;
+          vezDe = null; feitoPor = [];
         }
       } else {
-        vezDe = null;
+        vezDe = null; feitoPor = [];
       }
     }
-    if(justReopened) vezDe = null;
+    if(justReopened){ vezDe = null; feitoPor = []; }
 
     var concluidoEm = justConcluded ? new Date().toISOString() : (justReopened ? null : task.concluidoEm);
     if(state.conn==='online'){
       try{
-        await sbTasksWrite('update', withVezDe({status:newStatus, concluido_em:concluidoEm}, vezDe), id);
-        if(handoffTo) await logTaskAction(id, 'Repassou para '+userName(handoffTo)+' dar andamento');
+        await sbTasksWrite('update', withVezDe({status:newStatus, concluido_em:concluidoEm}, vezDe, feitoPor), id);
+        if(handoffTo) await logTaskAction(id, 'Concluiu a sua parte e repassou para '+userName(handoffTo));
         await reloadTasksFromSb();
       }catch(err){}
     } else {
-      state.tasks = state.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{status:newStatus, concluidoEm:concluidoEm, vezDe:vezDe}) : t; });
+      state.tasks = state.tasks.map(function(t){ return t.id===id ? Object.assign({},t,{status:newStatus, concluidoEm:concluidoEm, vezDe:vezDe, feitoPor:feitoPor}) : t; });
       saveLocalTasks(state.tasks);
     }
     return {wasStatus:wasStatus, finalStatus:newStatus, handoffTo:handoffTo};
@@ -3721,7 +3752,7 @@
         render();
         if(res && !res.cancelled && res.wasStatus){
           var msg = res.handoffTo
-            ? 'Aguardando '+userName(res.handoffTo)+' dar andamento'
+            ? 'Sua parte concluída — agora é pendência de '+userName(res.handoffTo)
             : 'Movida para "'+col.label+'"';
           // Concluída trava — não faz sentido oferecer desfazer que não vai funcionar
           if(res.finalStatus==='done') showToast(msg+' — tarefa concluída fica travada.', true);
@@ -4033,9 +4064,12 @@
     var atividades = all.filter(function(t){return t.tipo==='atividade';}).length;
     var projetos = all.filter(function(t){return t.tipo==='projeto';}).length;
 
+    // Tarefa repassada conta só pra quem está com ela agora, pra carga por pessoa
+    // não ficar inflada com o que a pessoa já entregou.
     var byPerson = {};
     open.forEach(function(t){
       (t.responsaveis||[]).forEach(function(u){
+        if(!isPendingFor(t, u)) return;
         byPerson[u] = byPerson[u] || {open:0, overdue:0};
         byPerson[u].open++;
         if(fmtPrazo(t.prazo).days<0) byPerson[u].overdue++;
