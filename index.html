@@ -2082,8 +2082,13 @@
     var prazoLocked = !isNew && !isAdmin();
     if(prazoLocked) prazoField.disabled = true;
     if(prazoLockNote) prazoLockNote.classList.toggle('hidden', !prazoLocked);
-    // Não deixa escolher data que já passou (tarefa antiga mantém o prazo original até mexerem nele)
-    prazoField.min = todayIso();
+    // Não deixa escolher data que já passou. Mas se a tarefa JÁ estava com o prazo
+    // vencido, o mínimo passa a ser o próprio prazo dela — senão o navegador barra o
+    // formulário inteiro (a validação nativa roda antes do nosso código) e a pessoa
+    // fica sem conseguir nem concluir a tarefa. Escolher uma data passada de propósito
+    // continua bloqueado na checagem do salvamento.
+    var prazoAtual = state.draft.prazo || '';
+    prazoField.min = (isNew || !prazoAtual || prazoAtual >= todayIso()) ? todayIso() : prazoAtual;
     document.getElementById('f-prazo-past-note').classList.add('hidden');
 
     // Tarefa concluída: trava status, comentário e exclusão para todo mundo (admin incluído)
