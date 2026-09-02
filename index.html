@@ -292,7 +292,12 @@
   .nav-switch-wrap{display:none;}
 
   .app-body{display:flex;align-items:flex-start;}
-  .side-rail{width:60px;flex:none;background:var(--card);border-right:1px solid var(--border);min-height:calc(100vh - 78px);padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;position:sticky;top:0;align-self:stretch;}
+  /* A barra em si acompanha a altura do conteúdo (fundo e borda contínuos até o fim
+     da página). Quem gruda ao rolar é o bloco de ícones dentro dela — um elemento
+     sticky só gruda se for menor que o container, então esticar a barra e grudar o
+     miolo resolve as duas coisas ao mesmo tempo. */
+  .side-rail{width:60px;flex:none;background:var(--card);border-right:1px solid var(--border);min-height:calc(100vh - 78px);padding:16px 8px;align-self:stretch;}
+  .side-rail .sr-inner{position:sticky;top:16px;display:flex;flex-direction:column;align-items:center;gap:8px;}
   .side-rail .sr-item{position:relative;display:flex;align-items:center;justify-content:center;padding:10px;border-radius:10px;font-weight:700;font-size:12.5px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background-color .12s ease,color .12s ease,box-shadow .15s ease;}
   .side-rail .sr-item:hover{background:var(--border2);}
   .side-rail .sr-item.active{box-shadow:2px 3px 10px -3px var(--shadow-card);}
@@ -506,11 +511,13 @@
 
   <div class="app-body">
     <nav class="side-rail" id="side-rail">
-      <div class="sr-item" data-tab="overview"><span class="sr-icon">📊</span><span class="sr-label">Visão Geral</span></div>
-      <div class="sr-item" data-tab="board"><span class="sr-icon">🗂️</span><span class="sr-label">Quadro de Tarefas</span></div>
-      <div class="sr-item" data-tab="calendar"><span class="sr-icon">📅</span><span class="sr-label">Calendário</span></div>
-      <div class="sr-item" data-tab="info"><span class="sr-icon">📣</span><span class="sr-label">Informações Gerais</span></div>
-      <div class="sr-item" data-tab="vault"><span class="sr-icon">🔐</span><span class="sr-label">Acessos e Senhas</span></div>
+      <div class="sr-inner">
+        <div class="sr-item" data-tab="overview"><span class="sr-icon">📊</span><span class="sr-label">Visão Geral</span></div>
+        <div class="sr-item" data-tab="board"><span class="sr-icon">🗂️</span><span class="sr-label">Quadro de Tarefas</span></div>
+        <div class="sr-item" data-tab="calendar"><span class="sr-icon">📅</span><span class="sr-label">Calendário</span></div>
+        <div class="sr-item" data-tab="info"><span class="sr-icon">📣</span><span class="sr-label">Informações Gerais</span></div>
+        <div class="sr-item" data-tab="vault"><span class="sr-icon">🔐</span><span class="sr-label">Acessos e Senhas</span></div>
+      </div>
     </nav>
     <div class="app-main">
 
