@@ -1999,6 +1999,10 @@
   });
   document.getElementById('btn-new').addEventListener('click', function(){ openTaskModal(null); });
   document.getElementById('fp-team').addEventListener('click', function(){ document.getElementById('tools-panel').classList.add('hidden'); openTeamModal(); });
+  // A aba "Informações Gerais" (mural + caixas de conversa) está desativada porque o
+  // time não usa. O código continua no lugar: basta voltar isso pra true pra reativar.
+  var ABA_INFO_ATIVA = false;
+
   var NAV_LABELS = {
     overview: {icon:'📊', label:'Visão Geral'},
     board: {icon:'🗂️', label:'Quadro de Tarefas'},
@@ -3551,6 +3555,12 @@
   function render(){
     document.getElementById('who-role').textContent = isAdmin() ? 'ADMIN' : 'USUÁRIO';
     document.getElementById('who-name').textContent = state.session.displayName;
+
+    // Aba desativada: some do menu e ninguém cai nela (nem por sessão antiga salva)
+    if(!ABA_INFO_ATIVA){
+      if(state.mainTab==='info') state.mainTab = 'overview';
+      document.querySelectorAll('[data-tab="info"]').forEach(function(el){ el.classList.add('hidden'); });
+    }
 
     var allForPct = reportableTasks();
     var doneForPct = allForPct.filter(function(t){return t.status==='done';}).length;
