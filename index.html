@@ -334,6 +334,12 @@
   .ov-person-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border2);font-size:12.5px;}
   .ov-person-row:last-child{border-bottom:0;}
   .ov-list-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px;cursor:pointer;}
+  /* No repasse, a ação principal é clicar num nome da lista. O "concluir sem repassar"
+     fica como saída discreta embaixo — antes ele era o botão verde primário e acabava
+     sendo clicado como se fosse o "confirmar", fechando a tarefa sem repasse nenhum. */
+  .handoff-rodape{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+  .handoff-encerrar{width:100%;border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:11.5px;padding:9px;border-radius:9px;cursor:pointer;}
+  .handoff-encerrar:hover{border-color:var(--muted);color:var(--ink);}
   .ov-vertodas{margin-top:12px;width:100%;border:1.5px solid var(--border);background:transparent;color:var(--brand-green);font-weight:800;font-size:11.5px;padding:8px;border-radius:9px;cursor:pointer;}
   .ov-vertodas:hover{background:var(--chip-bg);border-color:var(--brand-green);}
   .ov-list-item:last-child{border-bottom:0;}
@@ -925,11 +931,11 @@
 <div class="overlay hidden" id="handoff-overlay">
   <div class="modal" style="max-width:420px;"><div class="modal-body">
     <h2>Quem dá andamento agora?</h2>
-    <p class="modal-sub" id="handoff-sub">Esta tarefa tem mais de um responsável, então ela só termina depois que todo mundo fizer a parte dele. Escolha quem continua: a tarefa volta para "Não iniciado" como pendência dessa pessoa, mantendo o mesmo prazo.</p>
+    <p class="modal-sub" id="handoff-sub">Esta tarefa tem mais de um responsável, então ela só termina depois que todo mundo fizer a parte dele. <b>Clique no nome de quem continua</b> — a tarefa vai para "Aguardando terceiros" como pendência dessa pessoa, mantendo o mesmo prazo.</p>
     <div class="chips-grid" id="handoff-list" style="grid-template-columns:1fr;max-height:230px;overflow:auto;padding:2px;"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-cancel" id="handoff-cancel">Cancelar</button>
-      <button type="button" class="btn btn-save" id="handoff-finish">Ninguém — concluir de vez</button>
+    <div class="handoff-rodape">
+      <button type="button" class="handoff-encerrar" id="handoff-finish">Ninguém mais precisa agir — concluir a tarefa</button>
+      <button type="button" class="btn btn-cancel" id="handoff-cancel" style="width:100%;">Cancelar</button>
     </div>
   </div></div>
 </div>
@@ -2567,8 +2573,10 @@
         if(escolha.action==='cancel'){ d.status = wasStatus; return; }
         if(escolha.action==='handoff'){
           handoffTo = escolha.username;
-          // Volta pro fluxo normal como pendência de quem recebeu (não é espera externa)
-          d.status = 'todo';
+          // Fica em "Aguardando terceiros" no nome de quem recebeu: deixa visível num
+          // relance que a bola está com outra pessoa. A cobrança (atrasadas, vencendo
+          // essa semana, carga por pessoa) já acompanha o vezDe, não o status.
+          d.status = 'aguardando';
           d.vezDe = handoffTo;
           d.feitoPor = (d.feitoPor||[]).concat([state.session.username])
             .filter(function(u,i,a){ return a.indexOf(u)===i; });
@@ -3757,7 +3765,7 @@
         if(escolha.action==='cancel') return {wasStatus:wasStatus, finalStatus:wasStatus, cancelled:true};
         if(escolha.action==='handoff'){
           handoffTo = escolha.username;
-          newStatus = 'todo'; // pendência de quem recebeu, dentro do fluxo normal
+          newStatus = 'aguardando'; // aguardando a vez de quem recebeu
           vezDe = handoffTo;
           if(feitoPor.indexOf(state.session.username)===-1) feitoPor.push(state.session.username);
           justConcluded = false;
