@@ -312,7 +312,7 @@
      da página). Quem gruda ao rolar é o bloco de ícones dentro dela — um elemento
      sticky só gruda se for menor que o container, então esticar a barra e grudar o
      miolo resolve as duas coisas ao mesmo tempo. */
-  .side-rail{width:60px;flex:none;background:var(--card);border-right:1px solid var(--border);min-height:calc(100vh - 78px);padding:16px 8px;align-self:stretch;}
+  .side-rail{width:60px;flex:none;background:var(--card);border-right:1px solid var(--border);min-height:calc(100vh - 78px);padding:17px 8px 16px;align-self:stretch;margin-top:-1px;}
   .side-rail .sr-inner{position:sticky;top:16px;display:flex;flex-direction:column;align-items:center;gap:8px;}
   .side-rail .sr-item{position:relative;display:flex;align-items:center;justify-content:center;padding:10px;border-radius:10px;font-weight:700;font-size:12.5px;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background-color .12s ease,color .12s ease,box-shadow .15s ease;}
   .side-rail .sr-item:hover{background:var(--border2);}
@@ -438,12 +438,16 @@
   .color-swatch.selected{border-color:var(--ink);box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink);}
 
   /* ---------- THEME TOGGLE ---------- */
-  .theme-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1.5px solid var(--border);background:var(--card);border-radius:12px;font-size:16px;color:var(--muted);}
+  .theme-btn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border:1.5px solid var(--border);background:var(--card);border-radius:12px;font-size:16px;color:var(--muted);flex:none;cursor:pointer;}
+  .theme-btn:hover{border-color:var(--brand-green);}
+  /* Na tela de login nao ha cabecalho pra abrigar o botao: la ele flutua no canto.
+     Dentro do app ele entra na fila do cabecalho — fixo, cobria o "Nova atividade". */
+  .theme-btn.flutuante{position:fixed;top:16px;right:16px;z-index:2000;}
 </style>
 </head>
 <body>
 
-<button class="theme-btn" id="theme-toggle-floating" title="Alternar modo claro/escuro" style="position:fixed;top:16px;right:16px;z-index:2000;">🌙</button>
+<button class="theme-btn flutuante" id="theme-toggle-floating" title="Alternar modo claro/escuro">🌙</button>
 
 <div id="boot-screen">Carregando…</div>
 
@@ -1890,14 +1894,32 @@
     showLogin();
   });
 
+  // O botao de tema e um so, mas muda de casa: flutua no canto da tela de login
+  // (que nao tem cabecalho) e entra na fila do cabecalho dentro do app, antes do
+  // "Nova atividade". Mover o proprio elemento preserva o listener e o estado.
+  function posicionaBotaoDeTema(dentroDoApp){
+    var btn = document.getElementById('theme-toggle-floating');
+    if(!btn) return;
+    if(dentroDoApp){
+      var header = document.querySelector('#app-screen header');
+      var novo = document.getElementById('btn-new');
+      if(header && novo && btn.parentNode !== header) header.insertBefore(btn, novo);
+      btn.classList.remove('flutuante');
+    } else {
+      if(btn.parentNode !== document.body) document.body.appendChild(btn);
+      btn.classList.add('flutuante');
+    }
+  }
   function showLogin(){
     populateLoginSelect();
     document.getElementById('login-screen').classList.remove('hidden');
     document.getElementById('app-screen').classList.add('hidden');
+    posicionaBotaoDeTema(false);
   }
   function showApp(){
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
+    posicionaBotaoDeTema(true);
     state.selectedPeople = [];
     showRandomQuote();
     render();
