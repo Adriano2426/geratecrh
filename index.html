@@ -12,13 +12,17 @@
 <style>
   :root{
     --bg:#faf9f5; --card:#fff; --accent:#111111; --accent2:#3a3a3a; --on-accent:#fff;
-    --ink:#181c24; --muted:#767d8c; --border:#ebe9f2; --border2:#ece9f4;
+    --ink:#181c24; --muted:#5e6575; --border:#ebe9f2; --border2:#ece9f4;
     --col-bg:#efedf5; --track-bg:#e6e3ef; --chip-bg:#f1eff7; --overlay-bg:rgba(20,16,30,.45);
     --shadow-soft:rgba(26,23,38,.12); --shadow-card:rgba(26,23,38,.25);
     --badge-neutral-bg:#ececef; --neutral2-text:#8b86a0;
     --danger-bg:#fdecef; --danger-text:#c4314b; --danger-border:#f0b8c2;
     --warn-bg:#fff3e0; --warn-text:#d98300;
     --brand-green:#16a070; --brand-green2:#12c78c;
+    /* --brand-green em texto pequeno sobre branco da 3,3:1 (reprova 4.5:1).
+       O tom abaixo da 5:1 e serve tanto como texto quanto como fundo de badge.
+       --brand-green segue valendo para pontos, bordas e fundos. */
+    --brand-green-text:#0f7f58;
     /* paleta operacional */
     --st-todo:#8b86a0; --st-doing:#2c6e9e; --st-aguardando:#b9791c; --st-done:#16a070;
     --pr-baixa:#7c8b99; --pr-urgente:#c4314b;
@@ -38,6 +42,7 @@
     --badge-neutral-bg:#2c2e38; --neutral2-text:#a9a4bd;
     --danger-bg:#3a2228; --danger-text:#ff8a9c; --danger-border:#5c3540;
     --warn-bg:#3a2f18; --warn-text:#ffb84d;
+    --brand-green-text:#4fd69b;
     --st-todo:#9a94b3; --st-doing:#7fb2da; --st-aguardando:#e0ac55; --st-done:#3fd6a0;
     --pr-baixa:#9bb0c2; --pr-urgente:#ff8a9c;
     --wip-over-bg:#3a2228; --wip-over-text:#ff8a9c;
@@ -76,10 +81,10 @@
   .login-hint{margin-top:20px;font-size:11px;color:var(--muted);text-align:center;line-height:1.6;}
   .quote-box{margin-top:18px;padding:14px 16px;border-radius:14px;background:var(--chip-bg);border:1px solid var(--border);}
   .quote-box .qtext{font-size:12.5px;font-style:italic;color:var(--ink);line-height:1.5;text-align:center;}
-  .quote-box .qauthor{font-size:11px;font-weight:800;color:var(--brand-green);text-align:center;margin-top:6px;}
+  .quote-box .qauthor{font-size:11px;font-weight:800;color:var(--brand-green-text);text-align:center;margin-top:6px;}
   .quote-box .qbook{font-style:italic;font-weight:700;}
   .quote-box .qlink{color:inherit;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
-  .quote-box .qlink:hover{color:var(--brand-green);text-decoration-style:solid;}
+  .quote-box .qlink:hover{color:var(--brand-green-text);text-decoration-style:solid;}
   .login-conn{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted);}
   .conn-dot{width:7px;height:7px;border-radius:50%;background:#c9c4d8;}
   .conn-dot.online{background:#16a070;}
@@ -98,22 +103,15 @@
   .conn-btn{display:flex;align-items:center;gap:8px;border:1.5px solid var(--border);background:var(--card);padding:8px 13px;border-radius:12px;font-weight:700;font-size:12px;color:var(--muted);}
 
   /* ---------- TOOLS BUTTON + FLOATING PANEL ---------- */
-  .tools-wrap, .person-filter-wrap{position:relative;}
+  .tools-wrap, .filters-wrap{position:relative;}
   .tools-btn{width:38px;height:38px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .tools-btn:hover{border-color:var(--brand-green);color:var(--brand-green);}
+  .tools-btn:hover{border-color:var(--brand-green);color:var(--brand-green-text);}
   .floating-panel{position:absolute;top:46px;right:0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:8px;min-width:210px;box-shadow:0 12px 28px var(--shadow-card);z-index:50;}
   .fp-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--ink);cursor:pointer;}
   .fp-item:hover{background:var(--chip-bg);}
   .fp-title{font-size:10.5px;font-weight:800;color:var(--muted);padding:4px 6px 8px;}
-  .person-filter-btn{display:flex;align-items:center;gap:7px;font-weight:800;font-size:12px;padding:7px 12px 7px 7px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;height:38px;}
-  .person-filter-btn:hover{border-color:var(--brand-green);}
-  .pf-av{width:20px;height:20px;border-radius:5px;background:var(--brand-green);display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;flex:none;}
-  .person-filter-wrap .floating-panel{min-width:230px;max-height:340px;overflow:auto;}
   .task-search-compact{width:38px;padding:7px 10px;border-radius:9px;border:1.5px solid var(--border);background:var(--card);color:var(--ink);font-size:12.5px;font-weight:600;outline:none;text-align:center;transition:width .18s ease;cursor:pointer;}
   .task-search-compact:focus, .task-search-compact.has-text{width:170px;text-align:left;cursor:text;}
-  .person-filter-wrap .chips-grid{grid-template-columns:1fr;}
-  .person-filter-wrap .person-chip{width:100%;}
-  .person-filter-wrap .person-chip .nm{overflow:visible;white-space:normal;}
   .conn-btn .dot{width:8px;height:8px;border-radius:50%;background:#c9c4d8;}
   .conn-btn.on .dot{background:#16a070;}
   .conn-btn.err .dot{background:#c4314b;}
@@ -128,17 +126,35 @@
   .row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
   .chip-btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-weight:800;font-size:13px;padding:8px 18px;border-radius:9px;border:1.5px solid var(--border);background:var(--card);color:var(--ink);}
   .chip-btn.active{border-color:var(--accent);background:var(--accent);color:var(--on-accent);box-shadow:0 4px 12px -4px var(--accent);}
-  .tabgroup{display:flex;gap:4px;padding:4px;background:var(--border2);border-radius:11px;}
-  .tabgroup button{border:0;font-weight:700;font-size:12.5px;padding:7px 15px;border-radius:8px;background:transparent;color:var(--muted);}
-  .tabgroup button.active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1);}
-  .viewgroup{display:flex;gap:4px;padding:4px;background:var(--border2);border-radius:11px;margin-left:auto;}
+  .viewgroup{display:flex;gap:4px;padding:4px;background:var(--border2);border-radius:11px;}
   .viewgroup button{border:0;font-weight:700;font-size:12.5px;padding:7px 13px;border-radius:8px;background:transparent;color:var(--muted);}
   .viewgroup button.active{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1);}
 
-  .quick-filter-row{gap:8px;flex-wrap:wrap;padding-top:10px;margin-top:10px;border-top:1px dashed var(--border);}
-  .qf-label{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);margin-right:2px;align-self:center;}
+  /* ---------- BARRA DO QUADRO: UMA FAIXA SO ----------
+     No alto fica o que muda todo dia (mes, visao, busca). Tipo, prioridade,
+     pessoa e densidade moram no painel de "Filtros", com um contador no botao
+     pra ninguem achar que as tarefas sumiram por causa de um filtro esquecido. */
+  .month-btn{font-weight:800;font-size:13.5px;min-width:136px;text-align:center;padding:7px 12px;border-radius:9px;border:1.5px solid var(--border);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;}
+  .month-btn:hover{border-color:var(--brand-green);}
+  .month-btn.active{border-color:var(--brand-green);color:var(--brand-green-text);background:var(--chip-bg);}
+  .filters-btn{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:12px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;white-space:nowrap;height:38px;}
+  .filters-btn:hover{border-color:var(--brand-green);}
+  .filters-btn.on{border-color:var(--brand-green);color:var(--brand-green-text);background:var(--chip-bg);}
+  .filters-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--brand-green-text);color:#fff;font-size:10.5px;font-weight:800;}
+  html[data-theme="dark"] .filters-badge{color:#14151a;}
+  #filters-panel{min-width:292px;max-width:322px;padding:14px;display:flex;flex-direction:column;gap:13px;
+    /* em tela baixa o painel inteiro rola, em vez de passar do rodape */
+    max-height:calc(100vh - 130px);overflow:auto;}
+  #filters-panel .fp-title{padding:0;letter-spacing:.08em;}
+  .fp-group{display:flex;flex-direction:column;gap:7px;}
+  .fp-group-sep{border-top:1px solid var(--border);padding-top:12px;}
+  .fp-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  #filters-panel .fp-people{grid-template-columns:1fr;max-height:170px;overflow:auto;}
+  #filters-panel .fp-people .person-chip .nm{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .fp-clear{border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-weight:800;font-size:11.5px;padding:8px;border-radius:9px;cursor:pointer;}
+  .fp-clear:hover{border-color:var(--brand-green);border-style:solid;color:var(--brand-green-text);}
   .chip-filter{border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-weight:700;font-size:12px;padding:6px 12px;border-radius:20px;cursor:pointer;white-space:nowrap;}
-  .chip-filter.active{border-color:var(--brand-green);color:var(--brand-green);background:var(--chip-bg);}
+  .chip-filter.active{border-color:var(--brand-green);color:var(--brand-green-text);background:var(--chip-bg);}
   .visible-count{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--muted);align-self:center;white-space:nowrap;}
   .density-compact .card{padding:9px 10px;border-radius:10px;}
   .density-compact .card-top{margin-bottom:4px;gap:6px;}
@@ -193,7 +209,7 @@
     .floating-panel{right:-8px;max-width:calc(100vw - 32px);}
     .mobile-col-switch{display:flex;gap:6px;padding:0 0 12px;}
     .mobile-col-switch button{flex:1;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font-weight:800;font-size:10.5px;padding:8px 3px;border-radius:9px;display:flex;align-items:center;justify-content:center;gap:4px;}
-    .mobile-col-switch button.active{border-color:var(--brand-green);color:var(--brand-green);background:var(--chip-bg);}
+    .mobile-col-switch button.active{border-color:var(--brand-green);color:var(--brand-green-text);background:var(--chip-bg);}
     .kanban .col{display:none;}
     .kanban .col.mobile-active{display:block;}
   }
@@ -226,7 +242,7 @@
   .banner-link{border:0;background:transparent;padding:0;font:inherit;color:var(--ink);font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
   .banner-link:hover{opacity:.75;}
   .banner-link.atrasada{color:var(--danger-text);}
-  .due-chip{display:inline-flex;align-items:center;gap:6px;margin-left:auto;background:var(--card);border:1.5px solid var(--brand-green);color:var(--brand-green);border-radius:20px;padding:4px 5px 4px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;}
+  .due-chip{display:inline-flex;align-items:center;gap:6px;margin-left:auto;background:var(--card);border:1.5px solid var(--brand-green);color:var(--brand-green-text);border-radius:20px;padding:4px 5px 4px 12px;font-size:11.5px;font-weight:800;white-space:nowrap;}
   .due-chip .x{width:19px;height:19px;flex:none;border:0;padding:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;}
   .due-chip .x:hover{background:var(--brand-green);color:var(--card);}
   .card-checklist-mini{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
@@ -340,7 +356,7 @@
   .handoff-rodape{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
   .handoff-encerrar{width:100%;border:1.5px dashed var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:11.5px;padding:9px;border-radius:9px;cursor:pointer;}
   .handoff-encerrar:hover{border-color:var(--muted);color:var(--ink);}
-  .ov-vertodas{margin-top:12px;width:100%;border:1.5px solid var(--border);background:transparent;color:var(--brand-green);font-weight:800;font-size:11.5px;padding:8px;border-radius:9px;cursor:pointer;}
+  .ov-vertodas{margin-top:12px;width:100%;border:1.5px solid var(--border);background:transparent;color:var(--brand-green-text);font-weight:800;font-size:11.5px;padding:8px;border-radius:9px;cursor:pointer;}
   .ov-vertodas:hover{background:var(--chip-bg);border-color:var(--brand-green);}
   .ov-list-item:last-child{border-bottom:0;}
   .ov-list-item .t{flex:1;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -359,7 +375,7 @@
 
   /* ---------- MURAL FEED ---------- */
   .mural-post{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;}
-  .mural-post .who{font-size:12px;font-weight:800;color:var(--brand-green);}
+  .mural-post .who{font-size:12px;font-weight:800;color:var(--brand-green-text);}
   .mural-post .when{font-size:10.5px;color:var(--muted);font-weight:600;margin-left:6px;}
   .mural-post .txt{font-size:13.5px;line-height:1.5;white-space:pre-wrap;margin-top:4px;}
 
@@ -527,9 +543,10 @@
     </nav>
     <div class="app-main">
 
-  <div id="quote-box" class="quote-box" style="margin:16px 32px 0;"></div>
-
   <div id="overview-section" class="hidden">
+    <!-- A frase do dia e pra quem esta abrindo o dia, nao pra quem esta operando o
+         quadro: por isso ela vive aqui e nao mais acima de todas as abas. -->
+    <div id="quote-box" class="quote-box" style="margin:16px 32px 0;"></div>
     <main>
       <div id="overview-content" class="overview-grid"></div>
     </main>
@@ -539,39 +556,48 @@
     <div id="my-pending-banner" class="pending-banner hidden"></div>
     <div class="toolbar">
       <div class="row" id="admin-filter-row" style="gap:10px;">
-        <button class="team-btn" id="board-month-prev">◀</button>
-        <div id="board-month-label" style="font-weight:800;font-size:13.5px;min-width:100px;text-align:center;"></div>
-        <button class="team-btn" id="board-month-next">▶</button>
-        <span id="board-month-toggle" style="font-size:11.5px;font-weight:700;color:var(--brand-green);cursor:pointer;text-decoration:underline;white-space:nowrap;margin-right:6px;">Todos os meses</span>
-        <div class="tabgroup" id="type-tabs">
-          <button class="active" data-type="all">Tudo</button>
-          <span style="width:8px;display:inline-block;"></span>
-          <button data-type="projeto">Projetos</button>
-          <button data-type="atividade">Atividades</button>
-        </div>
+        <button class="team-btn" id="board-month-prev" aria-label="Mês anterior">◀</button>
+        <!-- O proprio nome do mes alterna pra "Todos os meses": era um link solto ao lado. -->
+        <button class="month-btn" id="board-month-label" title="Clique para ver todos os meses"></button>
+        <button class="team-btn" id="board-month-next" aria-label="Mês seguinte">▶</button>
         <div class="viewgroup" id="view-tabs">
           <button class="active" data-view="kanban">▦ Kanban</button>
           <button data-view="list">☰ Lista</button>
         </div>
         <input id="task-search" placeholder="🔎" title="Buscar tarefa" class="task-search-compact">
-        <div class="person-filter-wrap">
-          <button class="person-filter-btn" id="person-filter-trigger" title="Filtrar por pessoa"><span class="pf-av" id="pf-av">T</span><span id="pf-label">Todos</span><span style="color:var(--muted);">▾</span></button>
-          <div class="floating-panel hidden" id="person-filter-panel">
-            <div class="fp-title">FILTRAR POR PESSOA (pode marcar mais de uma)</div>
-            <div class="chips-grid" id="person-chips"></div>
-            <button type="button" id="person-filter-close" style="width:100%;margin-top:8px;border:0;background:var(--brand-green);color:#fff;font-weight:800;font-size:12px;padding:8px;border-radius:9px;cursor:pointer;">Concluído</button>
+        <span id="visible-count" class="visible-count"></span>
+        <div class="filters-wrap">
+          <button class="filters-btn" id="filters-trigger" aria-expanded="false" title="Filtros">⚙ Filtros<span class="filters-badge hidden" id="filters-badge">0</span></button>
+          <div class="floating-panel hidden" id="filters-panel">
+            <div class="fp-group">
+              <div class="fp-title">TIPO</div>
+              <div class="fp-chips" id="type-tabs">
+                <button class="chip-filter active" data-type="all">Tudo</button>
+                <button class="chip-filter" data-type="projeto">Projetos</button>
+                <button class="chip-filter" data-type="atividade">Atividades</button>
+              </div>
+            </div>
+            <div class="fp-group">
+              <div class="fp-title">PRIORIDADE</div>
+              <div class="fp-chips" id="prio-chips">
+                <button class="chip-filter active" data-prio="all">Todas</button>
+                <button class="chip-filter" data-prio="urgente">Urgente</button>
+                <button class="chip-filter" data-prio="normal">Normal</button>
+                <button class="chip-filter" data-prio="baixa">Baixa</button>
+              </div>
+            </div>
+            <div class="fp-group">
+              <div class="fp-title">PESSOA (pode marcar mais de uma)</div>
+              <div class="fp-chips"><button class="chip-filter" id="only-mine-toggle">Só as minhas</button></div>
+              <div class="chips-grid fp-people" id="person-chips"></div>
+            </div>
+            <div class="fp-group fp-group-sep">
+              <div class="fp-title">EXIBIÇÃO</div>
+              <div class="fp-chips"><button class="chip-filter" id="density-toggle" title="Alternar densidade do quadro">☰ Compacta</button></div>
+            </div>
+            <button type="button" class="fp-clear hidden" id="filters-clear">Limpar todos os filtros</button>
           </div>
         </div>
-      </div>
-      <div class="row quick-filter-row" id="quick-filter-row">
-        <span class="qf-label">Prioridade</span>
-        <button class="chip-filter active" data-prio="all">Todas</button>
-        <button class="chip-filter" data-prio="urgente">Urgente</button>
-        <button class="chip-filter" data-prio="normal">Normal</button>
-        <button class="chip-filter" data-prio="baixa">Baixa</button>
-        <button class="chip-filter" id="only-mine-toggle">Só as minhas</button>
-        <button class="chip-filter" id="density-toggle" title="Alternar densidade do quadro">☰ Compacta</button>
-        <span id="visible-count" class="visible-count"></span>
       </div>
     </div>
 
@@ -611,7 +637,7 @@
             <div style="font-size:16px;font-weight:800;">Mural de avisos</div>
             <div style="font-size:12.5px;color:var(--muted);font-weight:500;">Avisos de hoje e fixados</div>
           </div>
-          <span id="mural-show-all-toggle" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brand-green);cursor:pointer;text-decoration:underline;">Ver avisos anteriores</span>
+          <span id="mural-show-all-toggle" style="margin-left:auto;font-size:12px;font-weight:700;color:var(--brand-green-text);cursor:pointer;text-decoration:underline;">Ver avisos anteriores</span>
         </div>
       </div>
       <main>
@@ -1956,22 +1982,39 @@
   function hideGenericPopover(){ document.getElementById('generic-popover').classList.add('hidden'); }
   document.getElementById('tools-trigger').addEventListener('click', function(e){
     e.stopPropagation();
-    toggleFloatingPanel('tools-panel', 'person-filter-panel');
+    toggleFloatingPanel('tools-panel', 'filters-panel');
   });
-  document.getElementById('person-filter-trigger').addEventListener('click', function(e){
+  document.getElementById('filters-trigger').addEventListener('click', function(e){
     e.stopPropagation();
-    toggleFloatingPanel('person-filter-panel', 'tools-panel');
+    toggleFloatingPanel('filters-panel', 'tools-panel');
+    this.setAttribute('aria-expanded', String(!document.getElementById('filters-panel').classList.contains('hidden')));
   });
-  document.getElementById('person-filter-close').addEventListener('click', function(){
-    document.getElementById('person-filter-panel').classList.add('hidden');
+  document.getElementById('filters-clear').addEventListener('click', function(){
+    state.typeFilter = 'all';
+    state.priorityFilter = 'all';
+    state.onlyMine = false;
+    state.selectedPeople = [];
+    state.dueFilter = null;
+    state.search = '';
+    var buscaEl = document.getElementById('task-search');
+    if(buscaEl){ buscaEl.value = ''; buscaEl.classList.remove('has-text'); }
+    render();
   });
   document.addEventListener('click', function(e){
+    // Um clique que re-renderizou a tela (marcar uma pessoa no painel de filtros, por
+    // exemplo) arranca o proprio alvo do documento antes do evento chegar aqui. Ai
+    // "o alvo nao esta dentro do painel" passa a ser verdade por acidente e o painel
+    // fecharia sozinho — quando na verdade o clique foi dentro dele.
+    if(e.target && e.target.nodeType===1 && !document.contains(e.target)) return;
     var toolsPanel = document.getElementById('tools-panel');
     var toolsWrap = document.querySelector('.tools-wrap');
     if(toolsPanel && !toolsPanel.classList.contains('hidden') && toolsWrap && !toolsWrap.contains(e.target)) toolsPanel.classList.add('hidden');
-    var pfPanel = document.getElementById('person-filter-panel');
-    var pfWrap = document.querySelector('.person-filter-wrap');
-    if(pfPanel && !pfPanel.classList.contains('hidden') && pfWrap && !pfWrap.contains(e.target)) pfPanel.classList.add('hidden');
+    var fltPanel = document.getElementById('filters-panel');
+    var fltWrap = document.querySelector('.filters-wrap');
+    if(fltPanel && !fltPanel.classList.contains('hidden') && fltWrap && !fltWrap.contains(e.target)){
+      fltPanel.classList.add('hidden');
+      document.getElementById('filters-trigger').setAttribute('aria-expanded', 'false');
+    }
     var navPanel = document.getElementById('nav-switch-panel');
     var navWrap = document.querySelector('.nav-switch-wrap');
     if(navPanel && !navPanel.classList.contains('hidden') && navWrap && !navWrap.contains(e.target)) navPanel.classList.add('hidden');
@@ -1982,7 +2025,7 @@
     var btn = e.target.closest('button'); if(!btn) return;
     state.typeFilter = btn.getAttribute('data-type'); state.dueFilter = null; render();
   });
-  document.getElementById('quick-filter-row').addEventListener('click', function(e){
+  document.getElementById('prio-chips').addEventListener('click', function(e){
     var btn = e.target.closest('button.chip-filter[data-prio]'); if(!btn) return;
     state.priorityFilter = btn.getAttribute('data-prio'); state.dueFilter = null; render();
   });
@@ -2019,7 +2062,7 @@
   document.getElementById('nav-switch-trigger').addEventListener('click', function(e){
     e.stopPropagation();
     toggleFloatingPanel('nav-switch-panel', 'tools-panel');
-    document.getElementById('person-filter-panel') && document.getElementById('person-filter-panel').classList.add('hidden');
+    document.getElementById('filters-panel') && document.getElementById('filters-panel').classList.add('hidden');
   });
   document.getElementById('nav-switch-panel').addEventListener('click', function(e){
     var item = e.target.closest('.fp-item'); if(!item) return;
@@ -2894,13 +2937,13 @@
         var attach = p.anexoUrl ? attachIcon(p.anexoTipo) : null;
         var attachHref = safeHref(p.anexoUrl);
         return '<div class="mural-post'+(p.fixado?' pinned':'')+'">'+
-          (p.fixado ? '<div style="font-size:10px;font-weight:800;color:var(--brand-green);margin-bottom:3px;">📌 FIXADO</div>' : '')+
+          (p.fixado ? '<div style="font-size:10px;font-weight:800;color:var(--brand-green-text);margin-bottom:3px;">📌 FIXADO</div>' : '')+
           '<div><span class="who">'+escapeHtml(userName(p.autor))+'</span><span class="when">'+fmtWhen(p.criadoEm)+'</span></div>'+
           '<div class="txt">'+escapeHtml(p.texto)+'</div>'+
           (attach ? '<div style="display:flex;align-items:center;gap:10px;background:var(--chip-bg);border-radius:10px;padding:9px 11px;margin:8px 0;">'+
             '<span style="width:30px;height:30px;border-radius:8px;background:'+attach.bg+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;flex:none;">'+attach.label+'</span>'+
             '<span style="font-size:12px;font-weight:700;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escapeHtml(p.anexoNome||'arquivo')+'</span>'+
-            (attachHref ? '<a href="'+attachHref+'" target="_blank" rel="noopener" style="font-size:11px;font-weight:800;color:var(--brand-green);white-space:nowrap;">Abrir ↗</a>' : '')+
+            (attachHref ? '<a href="'+attachHref+'" target="_blank" rel="noopener" style="font-size:11px;font-weight:800;color:var(--brand-green-text);white-space:nowrap;">Abrir ↗</a>' : '')+
           '</div>' : '')+
           '<div style="display:flex;align-items:center;gap:10px;margin-top:8px;">'+
             '<button data-react="'+p.id+'" style="border:1.5px solid var(--border);background:'+(reacted?'var(--chip-bg)':'var(--card)')+';border-radius:20px;padding:3px 11px;font-size:12px;font-weight:700;cursor:pointer;color:var(--ink);">👍 '+(count>0?count:'')+'</button>'+
@@ -3277,7 +3320,7 @@
       btn.style.width = '100%';
       btn.disabled = !editable;
       if(!editable) btn.style.opacity = '.7';
-      btn.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+escapeHtml(st.displayName)+'</span>'+(isSel?'<span class="pill-check" style="margin-left:auto;color:var(--brand-green);font-weight:900;">✓</span>':'');
+      btn.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+escapeHtml(st.displayName)+'</span>'+(isSel?'<span class="pill-check" style="margin-left:auto;color:var(--brand-green-text);font-weight:900;">✓</span>':'');
       if(editable){
         btn.addEventListener('click', function(){
           var nowSel = !btn.classList.contains('active');
@@ -3286,7 +3329,7 @@
           if(nowSel && !existing){
             var chk = document.createElement('span');
             chk.className = 'pill-check';
-            chk.style.cssText = 'margin-left:auto;color:var(--brand-green);font-weight:900;';
+            chk.style.cssText = 'margin-left:auto;color:var(--brand-green-text);font-weight:900;';
             chk.textContent = '✓';
             btn.appendChild(chk);
           } else if(!nowSel && existing){
@@ -3483,6 +3526,20 @@
   });
 
   // ---------- RENDER ----------
+  // Lista legivel do que esta restringindo o quadro agora. Densidade e visao nao
+  // entram: mudam como o quadro aparece, nao quais tarefas ele mostra.
+  function filtrosAtivos(){
+    var out = [];
+    if(state.typeFilter==='projeto') out.push('Projetos');
+    else if(state.typeFilter==='atividade') out.push('Atividades');
+    if(state.priorityFilter!=='all') out.push('Prioridade: '+state.priorityFilter);
+    if(state.onlyMine) out.push('Só as minhas');
+    if(state.selectedPeople.length===1) out.push(userName(state.selectedPeople[0]));
+    else if(state.selectedPeople.length>1) out.push(state.selectedPeople.length+' pessoas');
+    if(String(state.search||'').trim()) out.push('Busca: "'+state.search+'"');
+    if(state.dueFilter) out.push(state.dueFilter==='atrasadas' ? 'Atrasadas' : 'Vencem esta semana');
+    return out;
+  }
   function visibleTasks(){
     var me = state.session.username;
     return state.tasks.filter(function(t){
@@ -3604,28 +3661,6 @@
     document.getElementById('conn-indicator').style.cursor = isAdmin() ? 'pointer' : 'default';
     document.getElementById('fp-team').style.display = isAdmin() ? 'flex' : 'none';
     renderBoardMonthBar();
-    var pfAv = document.getElementById('pf-av');
-    var pfLabel = document.getElementById('pf-label');
-    var pfTrigger = document.getElementById('person-filter-trigger');
-    if(state.selectedPeople.length===0){
-      pfAv.style.background = 'var(--muted)';
-      pfAv.textContent = 'T';
-      pfLabel.textContent = 'Todos';
-      pfTrigger.title = 'Filtrar por pessoa (mostrando: Todos)';
-    } else if(state.selectedPeople.length===1){
-      var only = state.selectedPeople[0];
-      var pSel = pal(only);
-      pfAv.style.background = pSel.avatar;
-      pfAv.textContent = (userName(only)||'?').charAt(0).toUpperCase();
-      pfLabel.textContent = userName(only);
-      pfTrigger.title = 'Filtrar por pessoa (mostrando: '+userName(only)+')';
-    } else {
-      pfAv.style.background = 'var(--brand-green)';
-      pfAv.textContent = String(state.selectedPeople.length);
-      pfLabel.textContent = state.selectedPeople.length+' pessoas';
-      pfTrigger.title = 'Filtrar por pessoa (mostrando: '+state.selectedPeople.map(userName).join(', ')+')';
-    }
-
     var visible = visibleTasks();
 
     document.querySelectorAll('#type-tabs button').forEach(function(b){
@@ -3634,7 +3669,7 @@
     document.querySelectorAll('#view-tabs button').forEach(function(b){
       b.classList.toggle('active', b.getAttribute('data-view')===state.view);
     });
-    document.querySelectorAll('#quick-filter-row button[data-prio]').forEach(function(b){
+    document.querySelectorAll('#prio-chips button[data-prio]').forEach(function(b){
       b.classList.toggle('active', b.getAttribute('data-prio')===state.priorityFilter);
     });
     document.getElementById('only-mine-toggle').classList.toggle('active', state.onlyMine);
@@ -3643,6 +3678,20 @@
     document.getElementById('kanban-view').classList.toggle('density-compact', state.density==='compact');
     document.getElementById('list-view').classList.toggle('density-compact', state.density==='compact');
     {
+      var ativos = filtrosAtivos();
+      var trigger = document.getElementById('filters-trigger');
+      var badge = document.getElementById('filters-badge');
+      badge.textContent = String(ativos.length);
+      badge.classList.toggle('hidden', ativos.length===0);
+      trigger.classList.toggle('on', ativos.length>0);
+      // O botao fechado precisa contar o que esta ligado — senao da pra achar que
+      // as tarefas sumiram quando foi um filtro esquecido que as escondeu.
+      trigger.title = ativos.length
+        ? 'Filtros ligados: '+ativos.join(' · ')
+        : 'Filtros (nenhum ligado)';
+      document.getElementById('filters-clear').classList.toggle('hidden', ativos.length===0);
+
+      // "Mostrando X de X" sem filtro nenhum nao informa nada: so aparece filtrado.
       var scopeTotal = reportableTasks().filter(function(t){
         if(!state.boardShowAllMonths){
           var refDate = (t.status==='done' && t.concluidoEm) ? t.concluidoEm.slice(0,7) : String(t.prazo||'').slice(0,7);
@@ -3650,7 +3699,8 @@
         }
         return true;
       }).length;
-      document.getElementById('visible-count').textContent = 'Mostrando '+visible.length+' de '+scopeTotal;
+      document.getElementById('visible-count').textContent =
+        ativos.length ? 'Mostrando '+visible.length+' de '+scopeTotal : '';
     }
 
     {
@@ -3660,7 +3710,7 @@
       todosEl.className = 'person-chip' + (state.selectedPeople.length===0 ? ' active' : '');
       todosEl.style.background = 'var(--chip-bg)';
       todosEl.innerHTML = '<span class="av" style="background:var(--muted)"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:var(--ink)">Todos</span>';
-      todosEl.addEventListener('click', function(){ state.selectedPeople=[]; document.getElementById('person-filter-panel').classList.add('hidden'); render(); });
+      todosEl.addEventListener('click', function(){ state.selectedPeople=[]; render(); });
       chipsEl.appendChild(todosEl);
       var members = Object.keys(state.users)
         .sort(function(a,b){ return state.users[a].displayName.localeCompare(state.users[b].displayName,'pt'); });
@@ -3670,7 +3720,7 @@
         var isSel = state.selectedPeople.indexOf(key)!==-1;
         var el = document.createElement('button');
         el.className = 'person-chip' + (isSel ? ' active' : '');
-        el.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+u.displayName+'</span>'+(isSel?'<span style="margin-left:auto;color:var(--brand-green);font-weight:900;">✓</span>':'');
+        el.innerHTML = '<span class="av" style="background:'+p.avatar+'"><svg viewBox="0 0 24 24" width="12" height="12" fill="#fff"><circle cx="12" cy="8.5" r="3.7"></circle><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6z"></path></svg></span><span class="nm" style="color:'+p.ink+'">'+u.displayName+'</span>'+(isSel?'<span style="margin-left:auto;color:var(--brand-green-text);font-weight:900;">✓</span>':'');
         el.style.background = p.tint;
         el.style.width = '100%';
         el.addEventListener('click', function(){
@@ -3967,18 +4017,24 @@
     state.boardMonth = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     render();
   }
-  document.getElementById('board-month-toggle').addEventListener('click', function(){
+  document.getElementById('board-month-label').addEventListener('click', function(){
     state.boardShowAllMonths = !state.boardShowAllMonths;
     state.dueFilter = null;
     render();
   });
   function renderBoardMonthBar(){
     var parts = state.boardMonth.split('-');
-    document.getElementById('board-month-label').textContent = MESES_PT[Number(parts[1])-1]+' de '+parts[0];
-    document.getElementById('board-month-toggle').textContent = state.boardShowAllMonths ? 'Mensal' : 'Todos os meses';
-    document.getElementById('board-month-prev').style.visibility = state.boardShowAllMonths ? 'hidden' : 'visible';
-    document.getElementById('board-month-next').style.visibility = state.boardShowAllMonths ? 'hidden' : 'visible';
-    document.getElementById('board-month-label').style.visibility = state.boardShowAllMonths ? 'hidden' : 'visible';
+    var label = document.getElementById('board-month-label');
+    var todos = state.boardShowAllMonths;
+    // O proprio rotulo diz o que esta valendo e, clicado, troca pro outro modo.
+    label.textContent = todos ? 'Todos os meses' : MESES_PT[Number(parts[1])-1]+' de '+parts[0];
+    label.title = todos
+      ? 'Clique para voltar a ver um mês por vez ('+MESES_PT[Number(parts[1])-1]+' de '+parts[0]+')'
+      : 'Clique para ver todos os meses';
+    label.classList.toggle('active', todos);
+    // Sem mes fixo as setas nao tem o que mover: saem do caminho em vez de ficarem mortas.
+    document.getElementById('board-month-prev').style.display = todos ? 'none' : '';
+    document.getElementById('board-month-next').style.display = todos ? 'none' : '';
   }
   document.getElementById('cal-prev').addEventListener('click', function(){ shiftCalMonth(-1); });
   document.getElementById('cal-next').addEventListener('click', function(){ shiftCalMonth(1); });
@@ -4318,8 +4374,9 @@
   document.getElementById('task-search').addEventListener('input', function(){
     state.search = this.value.trim();
     this.classList.toggle('has-text', this.value.length>0);
-    if(state.mainTab==='board' && state.view==='kanban') renderKanban(visibleTasks());
-    else if(state.mainTab==='board') renderList(visibleTasks());
+    // A busca conta como filtro ligado, entao o contador do botao e o "Mostrando X de Y"
+    // tambem precisam acompanhar — por isso o render inteiro, e nao so o quadro.
+    if(state.mainTab==='board') render();
   });
 
   // ---------- IMPORTAR TAREFAS EM MASSA ----------
