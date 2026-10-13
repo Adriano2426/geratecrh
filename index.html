@@ -17,7 +17,7 @@
     --shadow-soft:rgba(26,23,38,.12); --shadow-card:rgba(26,23,38,.25);
     --badge-neutral-bg:#ececef; --neutral2-text:#8b86a0;
     --danger-bg:#fdecef; --danger-text:#c4314b; --danger-border:#f0b8c2;
-    --warn-bg:#fff3e0; --warn-text:#d98300;
+    --warn-bg:#fff3e0; --warn-text:#d98300; --warn-text-forte:#9a5f00;
     --brand-green:#16a070; --brand-green2:#12c78c;
     /* --brand-green em texto pequeno sobre branco da 3,3:1 (reprova 4.5:1).
        O tom abaixo da 5:1 e serve tanto como texto quanto como fundo de badge.
@@ -41,7 +41,7 @@
     --shadow-soft:rgba(0,0,0,.35); --shadow-card:rgba(0,0,0,.5);
     --badge-neutral-bg:#2c2e38; --neutral2-text:#a9a4bd;
     --danger-bg:#3a2228; --danger-text:#ff8a9c; --danger-border:#5c3540;
-    --warn-bg:#3a2f18; --warn-text:#ffb84d;
+    --warn-bg:#3a2f18; --warn-text:#ffb84d; --warn-text-forte:#ffc46b;
     --brand-green-text:#4fd69b;
     --st-todo:#9a94b3; --st-doing:#7fb2da; --st-aguardando:#e0ac55; --st-done:#3fd6a0;
     --pr-baixa:#9bb0c2; --pr-urgente:#ff8a9c;
@@ -89,6 +89,7 @@
   .conn-dot{width:7px;height:7px;border-radius:50%;background:#c9c4d8;}
   .conn-dot.online{background:#16a070;}
   .conn-dot.error{background:#c4314b;}
+  .conn-dot.warn{background:var(--st-aguardando);}
 
   /* ---------- APP SHELL ---------- */
   #app-screen{min-height:100vh;display:flex;flex-direction:column;}
@@ -115,6 +116,8 @@
   .conn-btn .dot{width:8px;height:8px;border-radius:50%;background:#c9c4d8;}
   .conn-btn.on .dot{background:#16a070;}
   .conn-btn.err .dot{background:#c4314b;}
+  .conn-btn.warn .dot{background:var(--st-aguardando);}
+  .conn-btn.warn{color:var(--warn-text-forte);border-color:var(--st-aguardando);}
   .who-box{display:flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;border:1.5px solid var(--border);border-radius:12px;}
   .who-box .role-badge{font-size:10px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:6px;background:var(--badge-neutral-bg);color:var(--ink);}
   .who-box .name{font-size:13px;font-weight:700;}
@@ -303,6 +306,8 @@
   .conn-status-line .dot{width:8px;height:8px;border-radius:50%;background:#c9c4d8;}
   .conn-status-line.on .dot{background:#16a070;}
   .conn-status-line.err .dot{background:#c4314b;}
+  .conn-status-line.warn .dot{background:var(--st-aguardando);}
+  .conn-status-line.warn{background:var(--warn-bg);color:var(--warn-text-forte);}
 
   /* ---------- MAIN NAV SWITCH (painel flutuante) ---------- */
   .nav-switch-wrap{display:none;}
@@ -1234,6 +1239,11 @@
     draft: null,
     dragId: null,
     conn: 'local', // 'local' | 'connecting' | 'online' | 'error'
+    // Saude do tempo real, separada de 'conn' de proposito: 'conn' e a guarda de
+    // dezenas de pontos de gravacao, entao se o Realtime cai a escrita NAO pode
+    // cair junto. Grava-se pelo REST, que e outro servico; o que para de chegar
+    // e o aviso de que outra pessoa mudou algo.
+    realtimeOk: true,
     mainTab: 'overview', // 'overview' | 'board' | 'info' | 'vault' | 'calendar'
     infoSubTab: null, // null (landing) | 'mural' | 'conversas'
     infoBoxes: [],
@@ -1413,53 +1423,132 @@
     });
   }
 
+  // ---------- TEMPO REAL ----------
+  // As 14 tabelas que o site escuta. Cada uma recarrega so o seu pedaco.
+  function canaisRealtime(){
+    return [
+      {nome:'trh_tarefas',               tabela:'tarefas',               recarrega: reloadTasksFromSb},
+      {nome:'trh_usuarios',              tabela:'usuarios',              recarrega: reloadUsersFromSb},
+      {nome:'trh_info_caixas',           tabela:'info_caixas',           recarrega: reloadInfoBoxesFromSb},
+      {nome:'trh_info_mensagens',        tabela:'info_mensagens',        recarrega: reloadInfoMsgsFromSb},
+      {nome:'trh_cofre_caixas',          tabela:'cofre_caixas',          recarrega: reloadVaultBoxesFromSb},
+      {nome:'trh_cofre_acessos',         tabela:'cofre_acessos',         recarrega: reloadVaultAccessFromSb},
+      {nome:'trh_tarefas_responsaveis',  tabela:'tarefas_responsaveis',  recarrega: reloadTasksFromSb},
+      {nome:'trh_mural_posts',           tabela:'mural_posts',           recarrega: reloadMuralFromSb},
+      {nome:'trh_info_caixas_acessos',   tabela:'info_caixas_acessos',   recarrega: reloadInfoAccessFromSb},
+      {nome:'trh_tarefas_comentarios',   tabela:'tarefas_comentarios',   recarrega: reloadTaskCommentsFromSb},
+      {nome:'trh_mural_reacoes',         tabela:'mural_reacoes',         recarrega: reloadMuralReactionsFromSb},
+      {nome:'trh_mural_visualizacoes',   tabela:'mural_visualizacoes',   recarrega: reloadMuralViewsFromSb},
+      {nome:'trh_tarefas_checklist',     tabela:'tarefas_checklist',     recarrega: reloadTaskChecklistFromSb},
+      {nome:'trh_tarefas_anexos',        tabela:'tarefas_anexos',        recarrega: reloadTaskAnexosFromSb},
+    ];
+  }
+
+  var rtStatus = {};        // nome do canal -> ultimo status informado
+  var rtGeracao = 0;        // ignora callback de canal ja descartado
+  var rtRetryTimer = null;
+  var rtRetryEspera = 0;
+
   function subscribeRealtime(){
     channels.forEach(function(ch){ try{ sb.removeChannel(ch); }catch(e){} });
     channels = [];
-    var ch1 = sb.channel('trh_tarefas').on('postgres_changes',{event:'*',schema:'public',table:'tarefas'}, function(){
-      reloadTasksFromSb().then(refreshUi);
-    }).subscribe();
-    var ch2 = sb.channel('trh_usuarios').on('postgres_changes',{event:'*',schema:'public',table:'usuarios'}, function(){
-      reloadUsersFromSb().then(refreshUi);
-    }).subscribe();
-    var ch3 = sb.channel('trh_info_caixas').on('postgres_changes',{event:'*',schema:'public',table:'info_caixas'}, function(){
-      reloadInfoBoxesFromSb().then(refreshUi);
-    }).subscribe();
-    var ch4 = sb.channel('trh_info_mensagens').on('postgres_changes',{event:'*',schema:'public',table:'info_mensagens'}, function(){
-      reloadInfoMsgsFromSb().then(refreshUi);
-    }).subscribe();
-    var ch5 = sb.channel('trh_cofre_caixas').on('postgres_changes',{event:'*',schema:'public',table:'cofre_caixas'}, function(){
-      reloadVaultBoxesFromSb().then(refreshUi);
-    }).subscribe();
-    var ch6 = sb.channel('trh_cofre_acessos').on('postgres_changes',{event:'*',schema:'public',table:'cofre_acessos'}, function(){
-      reloadVaultAccessFromSb().then(refreshUi);
-    }).subscribe();
-    var ch7 = sb.channel('trh_tarefas_responsaveis').on('postgres_changes',{event:'*',schema:'public',table:'tarefas_responsaveis'}, function(){
-      reloadTasksFromSb().then(refreshUi);
-    }).subscribe();
-    var ch8 = sb.channel('trh_mural_posts').on('postgres_changes',{event:'*',schema:'public',table:'mural_posts'}, function(){
-      reloadMuralFromSb().then(refreshUi);
-    }).subscribe();
-    var ch9 = sb.channel('trh_info_caixas_acessos').on('postgres_changes',{event:'*',schema:'public',table:'info_caixas_acessos'}, function(){
-      reloadInfoAccessFromSb().then(refreshUi);
-    }).subscribe();
-    var ch10 = sb.channel('trh_tarefas_comentarios').on('postgres_changes',{event:'*',schema:'public',table:'tarefas_comentarios'}, function(){
-      reloadTaskCommentsFromSb().then(refreshUi);
-    }).subscribe();
-    var ch11 = sb.channel('trh_mural_reacoes').on('postgres_changes',{event:'*',schema:'public',table:'mural_reacoes'}, function(){
-      reloadMuralReactionsFromSb().then(refreshUi);
-    }).subscribe();
-    var ch12 = sb.channel('trh_mural_visualizacoes').on('postgres_changes',{event:'*',schema:'public',table:'mural_visualizacoes'}, function(){
-      reloadMuralViewsFromSb().then(refreshUi);
-    }).subscribe();
-    var ch13 = sb.channel('trh_tarefas_checklist').on('postgres_changes',{event:'*',schema:'public',table:'tarefas_checklist'}, function(){
-      reloadTaskChecklistFromSb().then(refreshUi);
-    }).subscribe();
-    var ch14 = sb.channel('trh_tarefas_anexos').on('postgres_changes',{event:'*',schema:'public',table:'tarefas_anexos'}, function(){
-      reloadTaskAnexosFromSb().then(refreshUi);
-    }).subscribe();
-    channels = [ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8, ch9, ch10, ch11, ch12, ch13, ch14];
+    rtStatus = {};
+    rtGeracao++;
+    var geracao = rtGeracao;
+    channels = canaisRealtime().map(function(def){
+      rtStatus[def.nome] = 'PENDENTE';
+      return sb.channel(def.nome)
+        .on('postgres_changes', {event:'*', schema:'public', table:def.tabela}, function(){
+          def.recarrega().then(refreshUi).catch(function(){});
+        })
+        .subscribe(function(status){
+          // removeChannel faz o canal antigo avisar 'CLOSED': se ele ja foi
+          // descartado, esse aviso nao diz nada sobre a assinatura atual.
+          if(geracao !== rtGeracao) return;
+          rtStatus[def.nome] = status;
+          avaliarSaudeDoRealtime();
+        });
+    });
   }
+
+  // Antes, .subscribe() era chamado sem callback: o site nunca ficava sabendo que
+  // um canal tinha caido e seguia mostrando "Sincronizado" com a tela congelada.
+  function avaliarSaudeDoRealtime(){
+    var nomes = Object.keys(rtStatus);
+    var ok = nomes.length > 0 && nomes.every(function(n){ return rtStatus[n] === 'SUBSCRIBED'; });
+    state.realtimeOk = ok;
+    updateConnIndicators();
+    if(ok){
+      rtRetryEspera = 0;
+      if(rtRetryTimer){ clearTimeout(rtRetryTimer); rtRetryTimer = null; }
+    } else {
+      agendarReassinatura();
+    }
+  }
+
+  // Recuo progressivo (5s, 10s, 20s... ate 1min) pra nao martelar o Supabase
+  // justamente enquanto ele esta instavel.
+  function agendarReassinatura(){
+    if(rtRetryTimer || state.conn !== 'online' || !sb) return;
+    rtRetryEspera = rtRetryEspera ? Math.min(rtRetryEspera * 2, 60000) : 5000;
+    rtRetryTimer = setTimeout(function(){
+      rtRetryTimer = null;
+      if(state.conn !== 'online' || !sb) return;
+      subscribeRealtime();
+      // Enquanto os canais estavam fora pode ter mudado coisa que nao foi avisada.
+      recarregarTudoDoSb().then(refreshUi).catch(function(){});
+    }, rtRetryEspera);
+  }
+
+  function pararRealtime(){
+    if(rtRetryTimer){ clearTimeout(rtRetryTimer); rtRetryTimer = null; }
+    rtRetryEspera = 0;
+    rtStatus = {};
+    rtGeracao++;
+    state.realtimeOk = true;
+  }
+
+  // Leitura completa do banco. Usada na conexao inicial, ao voltar pra aba e
+  // depois de uma queda de canal.
+  async function recarregarTudoDoSb(){
+    await reloadUsersFromSb();
+    await reloadTasksFromSb();
+    await reloadInfoBoxesFromSb();
+    await reloadInfoMsgsFromSb();
+    try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){
+      state.vaultBoxes = []; state.vaultAccess = [];
+    }
+    await reloadMuralFromSb();
+    await reloadInfoAccessFromSb();
+    await reloadTaskCommentsFromSb();
+    try{ await reloadTaskChecklistFromSb(); await reloadTaskAnexosFromSb(); }catch(f2Err){
+      state.taskChecklist = []; state.taskAnexos = [];
+    }
+    await reloadMuralReactionsFromSb();
+    await reloadMuralViewsFromSb();
+  }
+
+  // Voltar pra aba recarrega tudo. E a rede de seguranca que nao depende do
+  // tempo real: mesmo com o Realtime fora do ar, sair e voltar mostra o estado
+  // atual em vez da tela congelada de minutos atras.
+  var ultimaRecarga = 0;
+  var recarregando = false;
+  function recarregarAoVoltar(){
+    if(document.visibilityState !== 'visible') return;
+    if(state.conn !== 'online' || !sb) return;
+    if(recarregando) return;
+    if(Date.now() - ultimaRecarga < 15000) return; // alt-tab rapido nao refaz tudo
+    recarregando = true;
+    recarregarTudoDoSb().then(function(){
+      ultimaRecarga = Date.now();
+      refreshUi();
+    }).catch(function(){}).then(function(){
+      recarregando = false;
+    });
+  }
+  document.addEventListener('visibilitychange', recarregarAoVoltar);
+  window.addEventListener('focus', recarregarAoVoltar);
+
 
   function refreshUi(){
     if(!document.getElementById('login-screen').classList.contains('hidden')) populateLoginSelect();
@@ -1475,23 +1564,12 @@
     if(!ok){ state.conn='error'; updateConnIndicators(); return false; }
     try{
       sb = window.supabase.createClient(cfg.url, cfg.key);
-      await reloadUsersFromSb();
-      await reloadTasksFromSb();
-      await reloadInfoBoxesFromSb();
-      await reloadInfoMsgsFromSb();
-      try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){
-        state.vaultBoxes = []; state.vaultAccess = [];
-      }
-      await reloadMuralFromSb();
-      await reloadInfoAccessFromSb();
-      await reloadTaskCommentsFromSb();
-      try{ await reloadTaskChecklistFromSb(); await reloadTaskAnexosFromSb(); }catch(f2Err){
-        state.taskChecklist = []; state.taskAnexos = [];
-      }
-      await reloadMuralReactionsFromSb();
-      await reloadMuralViewsFromSb();
-      subscribeRealtime();
+      await recarregarTudoDoSb();
       state.conn = 'online';
+      state.realtimeOk = true;
+      ultimaRecarga = Date.now();
+      // Depois de 'conn' virar online, senao agendarReassinatura() desiste na hora.
+      subscribeRealtime();
       updateConnIndicators();
       return true;
     }catch(e){
@@ -1502,6 +1580,7 @@
   }
 
   function disconnect(){
+    pararRealtime();
     channels.forEach(function(ch){ try{ sb.removeChannel(ch); }catch(e){} });
     channels = [];
     sb = null;
@@ -1939,19 +2018,26 @@
       local: ['Modo local (sem sincronização)', 'Modo local', 'Modo local — dados salvos só neste navegador'],
       connecting: ['Conectando…', 'Conectando…', 'Conectando ao Supabase…'],
       online: ['Sincronizado em nuvem', 'Sincronizado', 'Conectado — todos veem os mesmos dados em tempo real'],
+      semAoVivo: ['Sincronizado (sem aviso ao vivo)', 'Sem aviso ao vivo',
+                  'Está gravando normalmente. O que não chega é o aviso de que outra pessoa mudou algo — a tela se atualiza sozinha quando você voltar para ela.'],
       error: ['Erro de conexão — usando dados locais', 'Erro de conexão', 'Não foi possível conectar. Confira a URL e a chave.'],
     };
-    var t = texts[state.conn] || texts.local;
+    // Conectado mas com os canais caidos nao e "Sincronizado": era justamente isso
+    // que deixava a tela congelada com o indicador verde.
+    var estadoVisual = (state.conn==='online' && !state.realtimeOk) ? 'semAoVivo' : state.conn;
+    var t = texts[estadoVisual] || texts.local;
+    var cls = estadoVisual==='online' ? 'on' : estadoVisual==='semAoVivo' ? 'warn' : estadoVisual==='error' ? 'err' : '';
 
-    loginDot.className = 'conn-dot' + (state.conn==='online' ? ' online' : state.conn==='error' ? ' error' : '');
+    loginDot.className = 'conn-dot' + (estadoVisual==='online' ? ' online' : estadoVisual==='semAoVivo' ? ' warn' : estadoVisual==='error' ? ' error' : '');
     loginText.textContent = t[0];
 
-    indBtn.className = 'conn-btn' + (state.conn==='online' ? ' on' : state.conn==='error' ? ' err' : '');
+    indBtn.className = 'conn-btn' + (cls ? ' '+cls : '');
     indLabel.textContent = t[1];
 
-    statusLine.className = 'conn-status-line' + (state.conn==='online' ? ' on' : state.conn==='error' ? ' err' : '');
+    statusLine.className = 'conn-status-line' + (cls ? ' '+cls : '');
     statusText.textContent = t[2];
 
+    // Desconectar continua valendo pelo 'conn' de verdade, nao pelo visual.
     disconnectBtn.classList.toggle('hidden', state.conn!=='online');
   }
 
