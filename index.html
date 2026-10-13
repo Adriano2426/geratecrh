@@ -1424,15 +1424,20 @@
   }
 
   // ---------- TEMPO REAL ----------
-  // As 14 tabelas que o site escuta. Cada uma recarrega so o seu pedaco.
+  // As tabelas que o site escuta ao vivo. Cada uma recarrega so o seu pedaco.
+  //
+  // O cofre (cofre_caixas / cofre_acessos) ficou de fora de proposito: a leitura
+  // direta dessas tabelas pela chave publicavel foi revogada, porque a coluna
+  // "observacoes" e onde as senhas sao digitadas. O site le o cofre pelas funcoes
+  // get_vault_boxes / get_vault_access, e postgres_changes precisaria do SELECT
+  // que acabou de ser tirado. Mudanca no cofre aparece ao abrir a aba ou ao
+  // voltar pra ela, que ja recarrega tudo.
   function canaisRealtime(){
     return [
       {nome:'trh_tarefas',               tabela:'tarefas',               recarrega: reloadTasksFromSb},
       {nome:'trh_usuarios',              tabela:'usuarios',              recarrega: reloadUsersFromSb},
       {nome:'trh_info_caixas',           tabela:'info_caixas',           recarrega: reloadInfoBoxesFromSb},
       {nome:'trh_info_mensagens',        tabela:'info_mensagens',        recarrega: reloadInfoMsgsFromSb},
-      {nome:'trh_cofre_caixas',          tabela:'cofre_caixas',          recarrega: reloadVaultBoxesFromSb},
-      {nome:'trh_cofre_acessos',         tabela:'cofre_acessos',         recarrega: reloadVaultAccessFromSb},
       {nome:'trh_tarefas_responsaveis',  tabela:'tarefas_responsaveis',  recarrega: reloadTasksFromSb},
       {nome:'trh_mural_posts',           tabela:'mural_posts',           recarrega: reloadMuralFromSb},
       {nome:'trh_info_caixas_acessos',   tabela:'info_caixas_acessos',   recarrega: reloadInfoAccessFromSb},

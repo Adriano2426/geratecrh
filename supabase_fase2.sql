@@ -2,6 +2,13 @@
 -- GERATEC — Fase 2: checklist, anexos multiplos, papel do responsavel
 -- (rode no SQL Editor do Supabase)
 --
+-- ATENCAO: a observacao abaixo estava ERRADA e foi corrigida pelo script
+-- supabase_tranca_cofre_e_rls.sql, que liga o RLS nessas duas tabelas.
+-- tarefas_comentarios e tarefas_responsaveis TEM RLS ligado; estas duas
+-- ficaram sendo as unicas sem, e o Security Advisor passou a apontar as duas
+-- como erro critico. Se for recriar o banco do zero, rode o outro script junto.
+--
+-- (texto original, mantido para registro:)
 -- Segue o mesmo nivel de acesso ja usado em tabelas como
 -- tarefas_comentarios e tarefas_responsaveis: leitura e escrita
 -- liberadas para a chave anon, sem RLS -- nao guardam segredo
