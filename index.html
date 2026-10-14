@@ -1116,6 +1116,13 @@
     }
     return H.map(function(x){ return ('00000000'+x.toString(16)).slice(-8); }).join('');
   }
+  // PostgREST responde PGRST202 quando a funcao chamada nao existe no banco.
+  function funcaoNaoExisteNoBanco(err){
+    if(!err) return false;
+    if(err.code === 'PGRST202') return true;
+    var m = String(err.message || '') + ' ' + String(err.hint || '');
+    return m.indexOf('Could not find the function') !== -1 || m.indexOf('does not exist') !== -1;
+  }
   function hashPassword(username, plain){ return sha256Hex(username+'::'+plain); }
 
   function slugify(name){
@@ -1244,6 +1251,7 @@
     // cair junto. Grava-se pelo REST, que e outro servico; o que para de chegar
     // e o aviso de que outra pessoa mudou algo.
     realtimeOk: true,
+    vaultSessaoInvalida: false, // sessao sem token (anterior a tranca) ou vencida
     mainTab: 'overview', // 'overview' | 'board' | 'info' | 'vault' | 'calendar'
     infoSubTab: null, // null (landing) | 'mural' | 'conversas'
     infoBoxes: [],
@@ -1408,16 +1416,30 @@
       state.infoMsgs = (res.data||[]).map(mapInfoMsgRow);
     });
   }
+  // O cofre deixou de ser consultado pelo nome do usuario e passou a exigir o
+  // token emitido no login. Antes, as funcoes acreditavam no nome recebido: como
+  // a lista de usuarios e publica e a chave do site esta no fonte da pagina,
+  // dava pra pedir o cofre em nome de quem tem acesso, sem senha nenhuma.
+  function vaultToken(){ return (state.session && state.session.token) || ''; }
+
   function reloadVaultBoxesFromSb(){
-    var uname = (state.session && state.session.username) || '';
-    return sb.rpc('get_vault_boxes', {p_username: uname}).then(function(res){
-      if(res.error) throw res.error;
+    return sb.rpc('vault_boxes', {p_token: vaultToken()}).then(function(res){
+      if(res.error){
+        // Sessao antiga (de antes do token) ou vencida: a tela explica o que
+        // fazer, em vez de dizer "nenhuma caixa" e parecer que sumiu tudo.
+        if(String(res.error.message||'').indexOf('sessao') !== -1){
+          state.vaultSessaoInvalida = true;
+          state.vaultBoxes = [];
+          return;
+        }
+        throw res.error;
+      }
+      state.vaultSessaoInvalida = false;
       state.vaultBoxes = (res.data||[]).map(mapVaultBoxRow);
     });
   }
   function reloadVaultAccessFromSb(){
-    var uname = (state.session && state.session.username) || '';
-    return sb.rpc('get_vault_access', {p_username: uname}).then(function(res){
+    return sb.rpc('vault_access', {p_token: vaultToken()}).then(function(res){
       if(res.error) throw res.error;
       state.vaultAccess = (res.data||[]).map(mapVaultAccessRow);
     });
@@ -1902,12 +1924,21 @@
     var pass = document.getElementById('login-pass').value;
     var localUser = state.users[key];
     var ok = false, mustChange = false, role = localUser && localUser.role, displayName = localUser && localUser.displayName;
+    var sessionToken = '';
     if(state.conn==='online'){
       try{
-        var res = await sb.rpc('login_check', {p_username:key, p_password_hash:hashPassword(key, pass)});
+        var hash = hashPassword(key, pass);
+        var res = await sb.rpc('login_check_v2', {p_username:key, p_password_hash:hash});
+        // Rede de seguranca de implantacao: se o site subir antes da PARTE A do
+        // supabase_cofre_token.sql, login_check_v2 ainda nao existe. Sem isso,
+        // NINGUEM conseguiria entrar — nao so o cofre pararia. Entrando pela
+        // funcao antiga a pessoa fica sem token e o cofre explica o porque.
+        if(res.error && funcaoNaoExisteNoBanco(res.error)){
+          res = await sb.rpc('login_check', {p_username:key, p_password_hash:hash});
+        }
         if(res.error) throw res.error;
         var row = (res.data||[])[0];
-        if(row){ ok=true; mustChange=!!row.must_change_password; role=row.role; displayName=row.display_name; }
+        if(row){ ok=true; mustChange=!!row.must_change_password; role=row.role; displayName=row.display_name; sessionToken=row.session_token; }
       }catch(err){
         loginErr.textContent = 'Não consegui verificar o login agora. Detalhe técnico: '+(err && err.message ? err.message : err);
         loginErr.style.display='block';
@@ -1926,7 +1957,7 @@
         showForcePw();
         return;
       }
-      state.session = {username:key, displayName:displayName, role:role};
+      state.session = {username:key, displayName:displayName, role:role, token:sessionToken};
       saveSession(state.session);
       if(state.conn==='online'){ try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){} }
       showApp();
@@ -1959,12 +1990,19 @@
     var newHash = hashPassword(key, p1);
     u.password = newHash;
     u.mustChangePassword = false;
+    var tokenNovo = '';
     if(state.conn==='online'){
       try{ await sb.from('usuarios').update({password:newHash, must_change_password:false}).eq('username', key); await reloadUsersFromSb(); }catch(err){}
+      // Quem troca a senha aqui nao passou pelo login_check_v2, entao precisa
+      // pedir o token agora — senao entraria no app sem acesso ao cofre.
+      try{
+        var tk = await sb.rpc('login_check_v2', {p_username:key, p_password_hash:newHash});
+        if(!tk.error && (tk.data||[])[0]) tokenNovo = tk.data[0].session_token;
+      }catch(tkErr){}
     } else {
       saveLocalUsers(state.users);
     }
-    state.session = {username:u.username, displayName:u.displayName, role:u.role};
+    state.session = {username:u.username, displayName:u.displayName, role:u.role, token:tokenNovo};
     saveSession(state.session);
     if(state.conn==='online'){ try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){} }
     document.getElementById('forcepw-screen').classList.add('hidden');
@@ -3479,6 +3517,10 @@
   function renderVaultList(){
     var wrap = document.getElementById('vault-list');
     wrap.innerHTML = '';
+    if(state.conn==='online' && (!vaultToken() || state.vaultSessaoInvalida)){
+      wrap.innerHTML = '<div class="empty-note">Sua sessão é anterior à última atualização de segurança do cofre, ou já venceu.<br>Clique em <b>Sair</b> no topo e entre de novo para liberar os acessos.</div>';
+      return;
+    }
     var boxes = state.vaultBoxes.filter(canSeeVaultBox)
       .sort(function(a,b){ return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
     if(boxes.length===0){
@@ -3530,12 +3572,12 @@
 
     if(state.conn==='online'){
       try{
-        var ins = await sb.rpc('create_vault_box', {p_titulo:titulo, p_cor:cor, p_observacoes:obs, p_criado_por:criadoPor, p_acesso:acesso, p_selected_usernames: acesso==='restrito' ? selected : []});
+        var ins = await sb.rpc('vault_create_box', {p_token:vaultToken(), p_titulo:titulo, p_cor:cor, p_observacoes:obs, p_acesso:acesso, p_selected_usernames: acesso==='restrito' ? selected : []});
         if(ins.error) throw ins.error;
         await reloadVaultBoxesFromSb();
         await reloadVaultAccessFromSb();
       }catch(err){
-        showToast('Não consegui criar a caixa. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em função "create_vault_box", rode o script supabase_vault_rpc.sql no Supabase.');
+        showToast('Não consegui criar a caixa. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em função "vault_create_box", rode a PARTE A do script supabase_cofre_token.sql no Supabase.');
       }
     } else {
       var nid = state.vaultBoxes.reduce(function(m,b){return Math.max(m,b.id);},0)+1;
@@ -3589,7 +3631,13 @@
     if(boxId==null) return;
     if(!confirm('Excluir essa caixa?')) return;
     if(state.conn==='online'){
-      try{ await sb.from('cofre_caixas').delete().eq('id', boxId); await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(err){}
+      try{
+        var del = await sb.rpc('vault_delete_box', {p_token:vaultToken(), p_id:boxId});
+        if(del.error) throw del.error;
+        await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb();
+      }catch(err){
+        showToast('Não consegui excluir a caixa. Detalhe técnico: '+(err && err.message ? err.message : err));
+      }
     } else {
       state.vaultBoxes = state.vaultBoxes.filter(function(b){ return b.id!==boxId; });
       state.vaultAccess = state.vaultAccess.filter(function(a){ return a.caixaId!==boxId; });
@@ -3613,12 +3661,12 @@
 
     if(state.conn==='online'){
       try{
-        var upd = await sb.rpc('update_vault_box', {p_id:boxId, p_titulo:novoTitulo, p_cor:cor, p_observacoes:novaObs, p_acesso:acesso, p_selected_usernames: acesso==='restrito' ? selected : []});
+        var upd = await sb.rpc('vault_update_box', {p_token:vaultToken(), p_id:boxId, p_titulo:novoTitulo, p_cor:cor, p_observacoes:novaObs, p_acesso:acesso, p_selected_usernames: acesso==='restrito' ? selected : []});
         if(upd.error) throw upd.error;
         await reloadVaultBoxesFromSb();
         await reloadVaultAccessFromSb();
       }catch(err){
-        showToast('Não consegui salvar as alterações. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em função "update_vault_box", rode o script supabase_vault_rpc.sql no Supabase.');
+        showToast('Não consegui salvar as alterações. Detalhe técnico: '+(err && err.message ? err.message : err)+' — se a mensagem falar em função "vault_update_box", rode a PARTE A do script supabase_cofre_token.sql no Supabase.');
         return;
       }
     } else {
