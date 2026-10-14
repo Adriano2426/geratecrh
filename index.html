@@ -1458,17 +1458,22 @@
     return [
       {nome:'trh_tarefas',               tabela:'tarefas',               recarrega: reloadTasksFromSb},
       {nome:'trh_usuarios',              tabela:'usuarios',              recarrega: reloadUsersFromSb},
-      {nome:'trh_info_caixas',           tabela:'info_caixas',           recarrega: reloadInfoBoxesFromSb},
-      {nome:'trh_info_mensagens',        tabela:'info_mensagens',        recarrega: reloadInfoMsgsFromSb},
+      {nome:'trh_info_caixas',           tabela:'info_caixas',           recarrega: reloadInfoBoxesFromSb,   so_se_info: true},
+      {nome:'trh_info_mensagens',        tabela:'info_mensagens',        recarrega: reloadInfoMsgsFromSb,    so_se_info: true},
       {nome:'trh_tarefas_responsaveis',  tabela:'tarefas_responsaveis',  recarrega: reloadTasksFromSb},
-      {nome:'trh_mural_posts',           tabela:'mural_posts',           recarrega: reloadMuralFromSb},
-      {nome:'trh_info_caixas_acessos',   tabela:'info_caixas_acessos',   recarrega: reloadInfoAccessFromSb},
+      {nome:'trh_mural_posts',           tabela:'mural_posts',           recarrega: reloadMuralFromSb,       so_se_info: true},
+      {nome:'trh_info_caixas_acessos',   tabela:'info_caixas_acessos',   recarrega: reloadInfoAccessFromSb,  so_se_info: true},
       {nome:'trh_tarefas_comentarios',   tabela:'tarefas_comentarios',   recarrega: reloadTaskCommentsFromSb},
-      {nome:'trh_mural_reacoes',         tabela:'mural_reacoes',         recarrega: reloadMuralReactionsFromSb},
-      {nome:'trh_mural_visualizacoes',   tabela:'mural_visualizacoes',   recarrega: reloadMuralViewsFromSb},
+      {nome:'trh_mural_reacoes',         tabela:'mural_reacoes',         recarrega: reloadMuralReactionsFromSb, so_se_info: true},
+      {nome:'trh_mural_visualizacoes',   tabela:'mural_visualizacoes',   recarrega: reloadMuralViewsFromSb,     so_se_info: true},
       {nome:'trh_tarefas_checklist',     tabela:'tarefas_checklist',     recarrega: reloadTaskChecklistFromSb},
       {nome:'trh_tarefas_anexos',        tabela:'tarefas_anexos',        recarrega: reloadTaskAnexosFromSb},
-    ];
+    ].filter(function(c){
+      // A aba "Informacoes Gerais" esta desligada e o acesso da chave publica
+      // as tabelas dela foi revogado. Assinar daria CHANNEL_ERROR e deixaria o
+      // indicador ambar pra sempre, sem nada de errado de verdade acontecendo.
+      return !c.so_se_info || ABA_INFO_ATIVA;
+    });
   }
 
   var rtStatus = {};        // nome do canal -> ultimo status informado
@@ -1540,19 +1545,26 @@
   async function recarregarTudoDoSb(){
     await reloadUsersFromSb();
     await reloadTasksFromSb();
-    await reloadInfoBoxesFromSb();
-    await reloadInfoMsgsFromSb();
     try{ await reloadVaultBoxesFromSb(); await reloadVaultAccessFromSb(); }catch(vaultErr){
       state.vaultBoxes = []; state.vaultAccess = [];
     }
-    await reloadMuralFromSb();
-    await reloadInfoAccessFromSb();
     await reloadTaskCommentsFromSb();
     try{ await reloadTaskChecklistFromSb(); await reloadTaskAnexosFromSb(); }catch(f2Err){
       state.taskChecklist = []; state.taskAnexos = [];
     }
-    await reloadMuralReactionsFromSb();
-    await reloadMuralViewsFromSb();
+    // Mural e caixas de conversa: a aba esta desligada e a permissao da chave
+    // publica nessas tabelas foi revogada. Estas leituras nao estao protegidas
+    // por try, entao uma delas falhando derrubaria a conexao inteira pro modo
+    // local — o app pararia de gravar no banco por causa de uma aba que ninguem
+    // usa. Reativar a aba exige devolver o acesso (ver supabase_warnings.sql).
+    if(ABA_INFO_ATIVA){
+      await reloadInfoBoxesFromSb();
+      await reloadInfoMsgsFromSb();
+      await reloadMuralFromSb();
+      await reloadInfoAccessFromSb();
+      await reloadMuralReactionsFromSb();
+      await reloadMuralViewsFromSb();
+    }
   }
 
   // Voltar pra aba recarrega tudo. E a rede de seguranca que nao depende do
